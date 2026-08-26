@@ -1,0 +1,30 @@
+{
+  "id": "request/source-json",
+  "note": "B1: json source sends Content-Type application/json",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "json",
+    "target": "zpl",
+    "bodyText": "{\"width\":400}"
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/json/to/zpl",
+    "headers": {
+      "content-type": "application/json",
+      "accept": "*/*"
+    },
+    "headersAbsent": [
+      "authorization"
+    ],
+    "headersMatch": {
+      "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+    },
+    "bodyText": "{\"width\":400}",
+    "queryAbsent": [
+      "params"
+    ]
+  }
+}

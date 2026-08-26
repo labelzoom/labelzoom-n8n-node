@@ -1,0 +1,16 @@
+{
+  "id": "request/base-url-default",
+  "note": "A3: default host is api.labelzoom.com -- not the legacy .net hosts.",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "zpl",
+    "target": "zpl",
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ"
+  },
+  "expect": {
+    "method": "POST",
+    "url": "https://api.labelzoom.com/api/v2/convert/zpl/to/zpl"
+  }
+}

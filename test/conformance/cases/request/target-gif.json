@@ -1,0 +1,30 @@
+{
+  "id": "request/target-gif",
+  "note": "B2: Accept is */* for every target. image/gif, image/bmp and image/jpeg are absent from the server's produces list and 406.",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "zpl",
+    "target": "gif",
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ"
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/zpl/to/gif",
+    "headers": {
+      "content-type": "text/plain",
+      "accept": "*/*"
+    },
+    "headersAbsent": [
+      "authorization"
+    ],
+    "headersMatch": {
+      "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+    },
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ",
+    "queryAbsent": [
+      "params"
+    ]
+  }
+}

@@ -1,0 +1,39 @@
+name: Live smoke
+
+# A daily check that the real API still behaves the way the offline fixtures
+# assume. Runs anonymously on purpose — no secrets, so it cannot leak one, and
+# the free tier is exactly what a new user hits first.
+#
+# Deliberately not triggered by pull_request: a fork PR must never be able to
+# spend the project's rate-limit budget.
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Convert ZPL to PDF against the live API
+        run: |
+          set -euo pipefail
+          status=$(curl -sS -o label.pdf -w '%{http_code}' \
+            -X POST 'https://api.labelzoom.com/api/v2/convert/zpl/to/pdf' \
+            -H 'Accept: */*' \
+            -H 'Content-Type: text/plain' \
+            --data-binary '^XA^FO50,50^ADN,36,20^FDLabelZoom^FS^XZ')
+          echo "HTTP $status"
+          [ "$status" = "200" ]
+          # A PDF, not an error page that happened to return 200.
+          head -c 4 label.pdf | grep -q '%PDF'
+          echo "Received $(wc -c < label.pdf) bytes of PDF"

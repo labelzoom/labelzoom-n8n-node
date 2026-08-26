@@ -1,0 +1,41 @@
+{
+  "id": "request/param-position",
+  "note": "C2: position cannot be expressed in dot-notation, only via ?params= JSON.",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "zpl",
+    "target": "png",
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ",
+    "options": {
+      "position": {
+        "x": 10,
+        "y": 20
+      }
+    }
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/zpl/to/png",
+    "headers": {
+      "content-type": "text/plain",
+      "accept": "*/*"
+    },
+    "headersAbsent": [
+      "authorization"
+    ],
+    "headersMatch": {
+      "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+    },
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ",
+    "queryJson": {
+      "params": {
+        "position": {
+          "x": 10,
+          "y": 20
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"types": [
+			"node",
+			"vite/client"
+		],
+		"lib": [
+			"es2022",
+			"dom"
+		]
+	},
+	"include": [
+		"credentials/**/*",
+		"nodes/**/*",
+		"test/**/*",
+		"scripts/**/*",
+		"vitest.config.ts"
+	]
+}

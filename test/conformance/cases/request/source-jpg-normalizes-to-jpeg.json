@@ -1,0 +1,30 @@
+{
+  "id": "request/source-jpg-normalizes-to-jpeg",
+  "note": "A2: jpg is normalized to jpeg in the path. One canonical wire spelling.",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "jpg",
+    "target": "zpl",
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ"
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/jpeg/to/zpl",
+    "headers": {
+      "content-type": "image/jpeg",
+      "accept": "*/*"
+    },
+    "headersAbsent": [
+      "authorization"
+    ],
+    "headersMatch": {
+      "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+    },
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ",
+    "queryAbsent": [
+      "params"
+    ]
+  }
+}

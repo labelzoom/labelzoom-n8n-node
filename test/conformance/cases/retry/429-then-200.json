@@ -1,0 +1,33 @@
+{
+  "id": "retry/429-then-200",
+  "note": "F2: Retry-After (60s) exceeds the computed backoff (1s), so it wins.",
+  "given": {
+    "maxRetries": 2,
+    "responses": [
+      {
+        "status": 429,
+        "headers": {
+          "content-type": "application/json",
+          "retry-after": "60"
+        },
+        "bodyText": "{\"message\":\"x\"}"
+      },
+      {
+        "status": 200,
+        "headers": {
+          "content-type": "text/plain"
+        },
+        "bodyText": "^XA^XZ"
+      }
+    ]
+  },
+  "expect": {
+    "attempts": 2,
+    "sleepsSeconds": [
+      60
+    ],
+    "result": {
+      "text": "^XA^XZ"
+    }
+  }
+}

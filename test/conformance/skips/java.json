@@ -1,0 +1,9 @@
+{
+  "language": "java",
+  "skips": [
+    {
+      "id": "validation/data-element-not-an-object",
+      "reason": "Java's withData signature accepts only Map<String, ?>, so a non-object data element cannot be written at all -- the guarantee is enforced at compile time and is strictly stronger than the runtime validation this case asserts. Same situation as the typecheck/* cases."
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "id": "response/success-text-non-utf8-charset",
+  "note": "D1: text decodes using the response charset, not a hardcoded UTF-8. The body is latin-1 0xE9 ('e-acute'), which is invalid UTF-8 and would decode to U+FFFD.",
+  "given": {
+    "status": 200,
+    "headers": {
+      "content-type": "text/plain;charset=ISO-8859-1"
+    },
+    "bodyBase64": "SGVsbG8g6Q=="
+  },
+  "expect": {
+    "result": {
+      "status": 200,
+      "text": "Hello é"
+    }
+  }
+}

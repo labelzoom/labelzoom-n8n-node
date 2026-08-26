@@ -1,0 +1,15 @@
+{
+  "id": "response/error-empty-body",
+  "note": "E2: with no body at all, fall through to the HTTP reason phrase. 406 is what an exact Accept header produces for gif/bmp/jpeg targets (see B2).",
+  "given": {
+    "status": 406,
+    "headers": {},
+    "bodyText": ""
+  },
+  "expect": {
+    "error": {
+      "status": 406,
+      "messageNonEmpty": true
+    }
+  }
+}

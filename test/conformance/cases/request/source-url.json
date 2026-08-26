@@ -1,0 +1,30 @@
+{
+  "id": "request/source-url",
+  "note": "A4: the URL is the request body; the server fetches it.",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "url",
+    "target": "zpl",
+    "bodyText": "https://example.com/label.pdf"
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/url/to/zpl",
+    "headers": {
+      "content-type": "text/plain",
+      "accept": "*/*"
+    },
+    "headersAbsent": [
+      "authorization"
+    ],
+    "headersMatch": {
+      "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+    },
+    "bodyText": "https://example.com/label.pdf",
+    "queryAbsent": [
+      "params"
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "id": "response/error-gateway-400",
+  "note": "E2: the gateway error shape is a bare {message}. Both shapes read .message.",
+  "given": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "bodyText": "{\"message\":\"Content-Type header is required\"}"
+  },
+  "expect": {
+    "error": {
+      "kind": "BadRequest",
+      "status": 400,
+      "message": "Content-Type header is required",
+      "rawBodyPresent": true
+    }
+  }
+}

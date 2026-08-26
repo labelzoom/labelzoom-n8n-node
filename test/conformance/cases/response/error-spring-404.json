@@ -1,0 +1,21 @@
+{
+  "id": "response/error-spring-404",
+  "note": "E2: the Spring error shape puts the detail on .message.",
+  "given": {
+    "status": 404,
+    "headers": {
+      "content-type": "application/json",
+      "x-lz-request-id": "2026/08/15/120000--3f2b8c1e-9a4d-4f7b-8c2e-1d5a6b7c8d9e"
+    },
+    "bodyText": "{\"timestamp\":\"2026-08-15T12:00:00.000+00:00\",\"status\":404,\"error\":\"Not Found\",\"message\":\"Invalid target epl\",\"path\":\"/api/v2/convert/zpl/to/epl\"}"
+  },
+  "expect": {
+    "error": {
+      "kind": "NotFound",
+      "status": 404,
+      "message": "Invalid target epl",
+      "requestId": "2026/08/15/120000--3f2b8c1e-9a4d-4f7b-8c2e-1d5a6b7c8d9e",
+      "rawBodyPresent": true
+    }
+  }
+}

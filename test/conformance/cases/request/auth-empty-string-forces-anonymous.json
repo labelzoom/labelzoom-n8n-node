@@ -1,0 +1,22 @@
+{
+  "id": "request/auth-empty-string-forces-anonymous",
+  "note": "G2: an explicit empty credential forces anonymous and must NOT fall back to LABELZOOM_API_KEY.",
+  "given": {
+    "client": {
+      "apiKey": ""
+    },
+    "env": {
+      "LABELZOOM_API_KEY": "lz_test_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    "source": "zpl",
+    "target": "zpl",
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ"
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/zpl/to/zpl",
+    "headersAbsent": [
+      "authorization"
+    ]
+  }
+}

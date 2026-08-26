@@ -1,0 +1,33 @@
+{
+  "id": "request/param-unset-defaults-not-emitted",
+  "note": "C1: setting dpi explicitly to the server default still serializes it, but no OTHER default leaks in alongside it.",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "zpl",
+    "target": "png",
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ",
+    "options": {
+      "dpi": 203
+    }
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/zpl/to/png",
+    "queryJson": {
+      "params": {
+        "dpi": 203
+      }
+    },
+    "queryJsonAbsentKeys": {
+      "params": [
+        "rotation",
+        "scaling",
+        "colorMode",
+        "darkness",
+        "watermark"
+      ]
+    }
+  }
+}

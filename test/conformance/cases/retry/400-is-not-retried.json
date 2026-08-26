@@ -1,0 +1,24 @@
+{
+  "id": "retry/400-is-not-retried",
+  "note": "F1: never retry a 4xx other than 429. The request will not become valid.",
+  "given": {
+    "maxRetries": 3,
+    "responses": [
+      {
+        "status": 400,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "bodyText": "{\"message\":\"Invalid source foo\"}"
+      }
+    ]
+  },
+  "expect": {
+    "attempts": 1,
+    "sleepsSeconds": [],
+    "error": {
+      "kind": "BadRequest",
+      "status": 400
+    }
+  }
+}

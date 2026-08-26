@@ -1,0 +1,22 @@
+{
+  "id": "request/auth-present",
+  "note": "B3: credentials are opaque; the SDK must not parse or validate them.",
+  "given": {
+    "client": {
+      "apiKey": "lz_test_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "source": "zpl",
+    "target": "zpl",
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ"
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/zpl/to/zpl",
+    "headers": {
+      "authorization": "Bearer lz_test_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "queryAbsent": [
+      "params"
+    ]
+  }
+}

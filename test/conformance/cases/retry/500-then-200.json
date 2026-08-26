@@ -1,0 +1,32 @@
+{
+  "id": "retry/500-then-200",
+  "note": "F2: with no Retry-After, the first backoff is 1s. Jitter is disabled in tests.",
+  "given": {
+    "maxRetries": 2,
+    "responses": [
+      {
+        "status": 500,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "bodyText": "{\"message\":\"x\"}"
+      },
+      {
+        "status": 200,
+        "headers": {
+          "content-type": "text/plain"
+        },
+        "bodyText": "^XA^XZ"
+      }
+    ]
+  },
+  "expect": {
+    "attempts": 2,
+    "sleepsSeconds": [
+      1
+    ],
+    "result": {
+      "text": "^XA^XZ"
+    }
+  }
+}

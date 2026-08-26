@@ -1,0 +1,18 @@
+{
+  "id": "response/error-malformed-json-body",
+  "note": "E2: a JSON parse failure must not mask the HTTP error.",
+  "given": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "bodyText": "{\"message\": \"unterminated"
+  },
+  "expect": {
+    "error": {
+      "kind": "BadRequest",
+      "status": 400,
+      "message": "{\"message\": \"unterminated"
+    }
+  }
+}

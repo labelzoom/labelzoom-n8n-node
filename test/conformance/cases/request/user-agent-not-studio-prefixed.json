@@ -1,0 +1,22 @@
+{
+  "id": "request/user-agent-not-studio-prefixed",
+  "note": "B4: a LabelZoomStudio/ prefix makes the server silently force pdf.conversionMode=NATIVE for versions <= 1.8.2.",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "zpl",
+    "target": "zpl",
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ"
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/zpl/to/zpl",
+    "headersMatch": {
+      "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+    },
+    "headersNotMatch": {
+      "user-agent": "^LabelZoomStudio/"
+    }
+  }
+}

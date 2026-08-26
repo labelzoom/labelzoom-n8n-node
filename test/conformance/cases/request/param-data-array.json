@@ -1,0 +1,49 @@
+{
+  "id": "request/param-data-array",
+  "note": "C3: data is an array, one entry per output label.",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "zpl",
+    "target": "png",
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ",
+    "options": {
+      "data": [
+        {
+          "name": "ACME"
+        },
+        {
+          "name": "OTHER"
+        }
+      ]
+    }
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/zpl/to/png",
+    "headers": {
+      "content-type": "text/plain",
+      "accept": "*/*"
+    },
+    "headersAbsent": [
+      "authorization"
+    ],
+    "headersMatch": {
+      "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+    },
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ",
+    "queryJson": {
+      "params": {
+        "data": [
+          {
+            "name": "ACME"
+          },
+          {
+            "name": "OTHER"
+          }
+        ]
+      }
+    }
+  }
+}

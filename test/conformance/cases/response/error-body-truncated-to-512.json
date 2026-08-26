@@ -1,0 +1,22 @@
+{
+  "id": "response/error-body-truncated-to-512",
+  "note": "E2/E3: the message truncates at 512 chars but rawBody keeps everything.",
+  "given": {
+    "status": 400,
+    "headers": {
+      "content-type": "text/plain"
+    },
+    "bodyTextRepeat": [
+      "x",
+      2000
+    ]
+  },
+  "expect": {
+    "error": {
+      "kind": "BadRequest",
+      "status": 400,
+      "messageMaxLength": 512,
+      "rawBodyLength": 2000
+    }
+  }
+}

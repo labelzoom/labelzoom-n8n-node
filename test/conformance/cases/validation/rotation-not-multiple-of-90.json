@@ -1,0 +1,18 @@
+{
+  "id": "validation/rotation-not-multiple-of-90",
+  "note": "C6: validated locally, raised as a type distinct from every API error, and never retried. No HTTP request is made.",
+  "given": {
+    "source": "zpl",
+    "target": "png",
+    "bodyText": "^XA^XZ",
+    "options": {
+      "rotation": 45
+    }
+  },
+  "expect": {
+    "validationError": {
+      "parameter": "rotation"
+    },
+    "requestsSent": 0
+  }
+}

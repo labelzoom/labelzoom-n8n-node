@@ -1,0 +1,24 @@
+{
+  "id": "retry/disabled-when-max-retries-zero",
+  "note": "F3.",
+  "given": {
+    "maxRetries": 0,
+    "responses": [
+      {
+        "status": 500,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "bodyText": "{\"message\":\"x\"}"
+      }
+    ]
+  },
+  "expect": {
+    "attempts": 1,
+    "sleepsSeconds": [],
+    "error": {
+      "kind": "ServerError",
+      "status": 500
+    }
+  }
+}

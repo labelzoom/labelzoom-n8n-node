@@ -1,0 +1,17 @@
+{
+  "id": "response/error-413",
+  "note": "E4: the anonymous tier caps request bodies at 1 MB.",
+  "given": {
+    "status": 413,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "bodyText": "{\"message\":\"Payload Too Large\"}"
+  },
+  "expect": {
+    "error": {
+      "kind": "PayloadTooLarge",
+      "status": 413
+    }
+  }
+}

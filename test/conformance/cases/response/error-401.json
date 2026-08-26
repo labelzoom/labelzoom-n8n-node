@@ -1,0 +1,18 @@
+{
+  "id": "response/error-401",
+  "note": "E4: 401 maps to Unauthorized. Only auth-required routes return it; the convert endpoint treats a bad credential as anonymous instead.",
+  "given": {
+    "status": 401,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "bodyText": "{\"message\":\"Unauthorized: invalid token or license\"}"
+  },
+  "expect": {
+    "error": {
+      "kind": "Unauthorized",
+      "status": 401,
+      "message": "Unauthorized: invalid token or license"
+    }
+  }
+}

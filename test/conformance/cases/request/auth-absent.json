@@ -1,0 +1,22 @@
+{
+  "id": "request/auth-absent",
+  "note": "B3/G1: no credential means the header is absent entirely -- never 'Bearer null'.",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "zpl",
+    "target": "zpl",
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ"
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/zpl/to/zpl",
+    "headersAbsent": [
+      "authorization"
+    ],
+    "queryAbsent": [
+      "params"
+    ]
+  }
+}

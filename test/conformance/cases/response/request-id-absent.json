@@ -1,0 +1,16 @@
+{
+  "id": "response/request-id-absent",
+  "note": "D2: an absent request id yields null/empty and never throws.",
+  "given": {
+    "status": 200,
+    "headers": {
+      "content-type": "text/plain"
+    },
+    "bodyText": "^XA^XZ"
+  },
+  "expect": {
+    "result": {
+      "requestId": null
+    }
+  }
+}

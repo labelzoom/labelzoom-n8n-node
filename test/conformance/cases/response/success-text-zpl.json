@@ -1,0 +1,20 @@
+{
+  "id": "response/success-text-zpl",
+  "note": "D1: text targets decode using the response charset.",
+  "given": {
+    "status": 200,
+    "headers": {
+      "content-type": "text/plain",
+      "x-lz-request-id": "2026/08/15/120000--3f2b8c1e-9a4d-4f7b-8c2e-1d5a6b7c8d9e"
+    },
+    "bodyText": "^XA^FO20,20^FDhi^FS^XZ"
+  },
+  "expect": {
+    "result": {
+      "status": 200,
+      "contentType": "text/plain",
+      "text": "^XA^FO20,20^FDhi^FS^XZ",
+      "requestId": "2026/08/15/120000--3f2b8c1e-9a4d-4f7b-8c2e-1d5a6b7c8d9e"
+    }
+  }
+}

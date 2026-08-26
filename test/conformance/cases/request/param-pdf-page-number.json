@@ -1,0 +1,39 @@
+{
+  "id": "request/param-pdf-page-number",
+  "note": "C4: pageNumber is 0-BASED. Zero must serialize, not be elided as a falsy default.",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "zpl",
+    "target": "png",
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ",
+    "options": {
+      "pdf": {
+        "pageNumber": 0
+      }
+    }
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/zpl/to/png",
+    "headers": {
+      "content-type": "text/plain",
+      "accept": "*/*"
+    },
+    "headersAbsent": [
+      "authorization"
+    ],
+    "headersMatch": {
+      "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+    },
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ",
+    "queryJson": {
+      "params": {
+        "pdf": {
+          "pageNumber": 0
+        }
+      }
+    }
+  }
+}
