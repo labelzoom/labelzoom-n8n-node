@@ -306,8 +306,8 @@ describe('errors', () => {
 	});
 
 	it('does not retry an auth failure', async () => {
-		// The gateway locks an IP out after 5 failed auths in 60 seconds, so a
-		// retrying bad credential would take down every workflow on the instance.
+		// Repeated auth failures are rate limited by source IP, so a retrying bad
+		// credential would take down every workflow sharing that address.
 		const { ctx, requests } = makeHarness({
 			parameters: {
 				sourceFormat: 'zpl',
@@ -323,5 +323,51 @@ describe('errors', () => {
 
 		await expect(convert.call(ctx, 0)).rejects.toThrow(/Unauthorized/);
 		expect(requests).toHaveLength(1);
+	});
+});
+
+describe('print input modes', () => {
+	const base = {
+		printerId: { mode: 'list', value: 'printer-1' },
+		idempotencyKey: '',
+		waitForCompletion: false,
+		options: {},
+	};
+
+	it('sends base64 input as text/plain, not the source format’s media type', async () => {
+		// The Print operation offers the same "Base64 Text" mode as Convert. Sending
+		// a base64 string labelled application/pdf produces a 502 on the way to the
+		// printer, or garbage at the printer itself.
+		const { ctx, requests } = makeHarness({
+			parameters: { ...base, sourceFormat: 'pdf', inputType: 'base64', labelContent: 'JVBERi0xLjQK' },
+			credentials: KEY,
+			responses: [JOB_ACCEPTED],
+		});
+		await print.call(ctx, 0);
+
+		expect(requests[0].headers['content-type']).toBe('text/plain');
+		expect(requests[0].bodyText).toBe('JVBERi0xLjQK');
+	});
+
+	it('still sends the source format’s media type for a real file', async () => {
+		const { ctx, requests } = makeHarness({
+			parameters: { ...base, sourceFormat: 'pdf', inputType: 'binary', binaryPropertyName: 'data' },
+			credentials: KEY,
+			binary: { data: { data: Buffer.from('%PDF-1.4') } },
+			responses: [JOB_ACCEPTED],
+		});
+		await print.call(ctx, 0);
+
+		expect(requests[0].headers['content-type']).toBe('application/pdf');
+	});
+
+	it('explains a non-JSON 2xx instead of leaking a SyntaxError', async () => {
+		const { ctx } = makeHarness({
+			parameters: { ...base, sourceFormat: 'zpl', inputType: 'text', labelContent: '^XA^XZ' },
+			credentials: KEY,
+			responses: [{ status: 200, headers: { 'content-type': 'text/html' }, bodyText: '<html>captive portal</html>' }],
+		});
+
+		await expect(print.call(ctx, 0)).rejects.toThrow(/Expected a print job from LabelZoom/);
 	});
 });

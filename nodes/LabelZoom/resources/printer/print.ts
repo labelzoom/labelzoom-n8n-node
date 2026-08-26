@@ -5,7 +5,7 @@ import type {
 	INodeProperties,
 	JsonObject,
 } from 'n8n-workflow';
-import { sleep } from 'n8n-workflow';
+import { NodeOperationError, sleep } from 'n8n-workflow';
 
 import { conversionOptionsField, documentInputFields } from '../../shared/descriptions';
 import { SOURCE_FORMATS, formatOptions, sourceMediaType, sourceWireToken } from '../../shared/formats';
@@ -16,6 +16,12 @@ import { readDocument, resourceId } from '../../shared/utils';
 import { TERMINAL_JOB_STATUSES, idempotencyKeyField, printerLocator } from './shared';
 
 const showFor = { resource: ['printer'], operation: ['print'] };
+
+function resolveContentType(inputType: string, sourceFormat: string): string {
+	if (inputType === 'base64') return 'text/plain';
+	if (sourceFormat === '') return 'application/octet-stream';
+	return sourceMediaType(sourceWireToken(sourceFormat));
+}
 
 export const printDescription: INodeProperties[] = [
 	printerLocator(showFor),
@@ -105,6 +111,11 @@ export async function print(
 
 	const document = await readDocument.call(this, itemIndex);
 
+	// Base64/text mode travels as text/plain whatever the source format is — the
+	// same rule Convert follows. Without this, choosing "Base64 Text" here would
+	// label a base64 string as application/pdf and the printer would get garbage.
+	const inputType = this.getNodeParameter('inputType', itemIndex) as string;
+
 	// `sourceFormat` is the one query parameter the print endpoint consumes itself;
 	// everything else is forwarded verbatim to the conversion step, which is why
 	// rotation and DPI work here even when no format change happens.
@@ -120,11 +131,26 @@ export async function print(
 		query: Object.keys(query).length > 0 ? query : undefined,
 		params: serializeConversionParams(this.getNode(), options),
 		body: document,
-		contentType: sourceFormat === '' ? 'application/octet-stream' : sourceMediaType(sourceWireToken(sourceFormat)),
+		contentType: resolveContentType(inputType, sourceFormat),
 		headers,
 	});
 
-	const job = JSON.parse(response.body.toString('utf8')) as JsonObject;
+	// The print endpoint answers JSON, but the request is made in raw-bytes mode,
+	// so this parse is on us. A 2xx that is not JSON means something sat in front
+	// of the API — a proxy or a captive portal — and a bare SyntaxError would tell
+	// the user nothing about that.
+	const text = response.body.toString('utf8');
+	let job: JsonObject;
+	try {
+		job = JSON.parse(text) as JsonObject;
+	} catch {
+		throw new NodeOperationError(
+			this.getNode(),
+			`Expected a print job from LabelZoom but got: ${text.slice(0, 200)}`,
+			{ itemIndex },
+		);
+	}
+
 	const json: IDataObject = {
 		...job,
 		printerId,

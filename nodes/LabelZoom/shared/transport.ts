@@ -308,9 +308,9 @@ export async function labelZoomRequest(
 
 		if (lastResponse.statusCode < 400) return lastResponse;
 
-		// Never retry an auth failure. The gateway's intrusion protection locks an
-		// IP out after 5 failed auths in 60 seconds, so hammering a bad credential
-		// takes down every other workflow on this n8n instance too.
+		// Never retry an auth failure. Repeated authentication failures are rate
+		// limited by source IP, so hammering a bad credential does not just fail
+		// this workflow — it can lock out every other workflow on the same host.
 		if (!isRetryableStatus(lastResponse.statusCode) || attempt === maxRetries) {
 			throw toNodeApiError(this.getNode(), lastResponse);
 		}

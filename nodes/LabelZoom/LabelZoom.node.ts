@@ -68,15 +68,22 @@ export class LabelZoom implements INodeType {
 		outputs: [NodeConnectionTypes.Main],
 		credentials: [
 			{
-				// Conversion works anonymously on the free tier (watermarked), so the
-				// node stays usable with no setup at all.
+				// Plain conversion works anonymously on the free tier (watermarked),
+				// so the node stays usable with no setup at all.
 				name: 'labelZoomApi',
 				required: false,
-				displayOptions: { show: { resource: ['label'] } },
+				displayOptions: { show: { resource: ['label'], operation: ['convert'] } },
 			},
 			{
-				// Printing is account-scoped: a job goes to *your* printer, so there
-				// is no anonymous equivalent.
+				// Everything else reads or writes account-scoped data — a template
+				// belongs to an account, and a print job goes to *your* printer — so
+				// there is no anonymous equivalent and a missing credential should be
+				// caught in the editor rather than as a 401 at run time.
+				name: 'labelZoomApi',
+				required: true,
+				displayOptions: { show: { resource: ['label'], operation: ['convertTemplate'] } },
+			},
+			{
 				name: 'labelZoomApi',
 				required: true,
 				displayOptions: { show: { resource: ['printer'] } },

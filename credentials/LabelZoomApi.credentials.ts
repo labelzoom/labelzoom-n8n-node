@@ -67,7 +67,10 @@ export class LabelZoomApi implements ICredentialType {
 	 */
 	test: ICredentialTestRequest = {
 		request: {
-			baseURL: '={{$credentials.baseUrl}}',
+			// Mirrors normalizeBaseUrl() in the node's transport: an empty field means
+			// the default, not an empty URL. Without the fallback, clearing the field
+			// fails the Test button on a credential that works fine in a workflow.
+			baseURL: '={{$credentials.baseUrl || "https://api.labelzoom.com"}}',
 			url: '/api/v3/templates',
 			method: 'GET',
 			headers: { Accept: '*/*' },
