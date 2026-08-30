@@ -4,6 +4,32 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # TypeScript is held at 6.x on purpose -- 7.0 is not adoptable here yet.
+      #
+      # TypeScript 7.0 is the Go-native compiler and ships no programmatic API:
+      # the package's only root export is lib/version.cjs, so `require("typescript")`
+      # returns an object with none of the compiler surface on it. The lint step
+      # dies before it reads a single rule:
+      #
+      #   TypeError: Cannot read properties of undefined (reading 'Intrinsic')
+      #       at node_modules/ts-api-utils/lib/index.cjs:787
+      #       at @typescript-eslint/typescript-estree/dist/convert-comments.js:37
+      #
+      # typescript-eslint reaches TypeScript through ts-api-utils, and its peer
+      # range says so outright: >=4.8.4 <6.1.0. Its TS 7 support issue is closed
+      # as not planned, pending the API's return in TypeScript 7.1.
+      #
+      # None of this is fixable here: the whole lint toolchain (eslint,
+      # typescript-eslint, eslint-plugin-n8n-nodes-base) is pinned by
+      # @n8n/node-cli, and `n8n.strict: true` in package.json leaves no override
+      # surface. Reproduced locally on 7.0.2 -- typecheck and build both pass; it
+      # is lint alone that fails.
+      #
+      # Drop this ignore once @n8n/node-cli ships a typescript-eslint that
+      # supports TypeScript 7.
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
     groups:
       npm-minor-patch:
         update-types: [minor, patch]
