@@ -1,0 +1,17 @@
+{
+  "id": "response/request-id-uppercase-header",
+  "note": "D2: the gateway sets X-LZ-Request-Id but CORS exposes X-LZ-Request-ID. Read it case-insensitively.",
+  "given": {
+    "status": 200,
+    "headers": {
+      "content-type": "text/plain",
+      "X-LZ-Request-ID": "2026/08/15/120000--3f2b8c1e-9a4d-4f7b-8c2e-1d5a6b7c8d9e"
+    },
+    "bodyText": "^XA^XZ"
+  },
+  "expect": {
+    "result": {
+      "requestId": "2026/08/15/120000--3f2b8c1e-9a4d-4f7b-8c2e-1d5a6b7c8d9e"
+    }
+  }
+}

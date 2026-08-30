@@ -1,0 +1,30 @@
+{
+  "id": "request/source-dpl",
+  "note": "B1: dpl source sends Content-Type text/plain",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "dpl",
+    "target": "zpl",
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ"
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/dpl/to/zpl",
+    "headers": {
+      "content-type": "text/plain",
+      "accept": "*/*"
+    },
+    "headersAbsent": [
+      "authorization"
+    ],
+    "headersMatch": {
+      "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+    },
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ",
+    "queryAbsent": [
+      "params"
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "id": "typecheck/source-format-not-accepted-as-target",
+  "note": "1.1: SourceFormat and TargetFormat are distinct types.",
+  "given": {
+    "snippet": "client.convert().fromZpl(body).to(SourceFormat.PDF)"
+  },
+  "expect": {
+    "compileError": true
+  }
+}

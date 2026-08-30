@@ -1,0 +1,17 @@
+{
+  "id": "request/base-url-override-with-path-prefix",
+  "note": "A3: a base URL carrying a path prefix is preserved, not discarded.",
+  "given": {
+    "client": {
+      "apiKey": null,
+      "baseUrl": "https://proxy.example.com/labelzoom"
+    },
+    "source": "zpl",
+    "target": "zpl",
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ"
+  },
+  "expect": {
+    "method": "POST",
+    "url": "https://proxy.example.com/labelzoom/api/v2/convert/zpl/to/zpl"
+  }
+}

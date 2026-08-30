@@ -1,0 +1,20 @@
+{
+  "id": "validation/data-element-not-an-object",
+  "note": "C3.",
+  "given": {
+    "source": "zpl",
+    "target": "png",
+    "bodyText": "^XA^XZ",
+    "options": {
+      "data": [
+        "not-an-object"
+      ]
+    }
+  },
+  "expect": {
+    "validationError": {
+      "parameter": "data"
+    },
+    "requestsSent": 0
+  }
+}

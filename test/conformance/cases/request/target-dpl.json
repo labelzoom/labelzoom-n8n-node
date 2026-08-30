@@ -1,0 +1,30 @@
+{
+  "id": "request/target-dpl",
+  "note": "1.1/7: Datamax DPL is a target as well as a source. text/plain out, all labels concatenated. B2: Accept is */* for every target.",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "zpl",
+    "target": "dpl",
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ"
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/zpl/to/dpl",
+    "headers": {
+      "content-type": "text/plain",
+      "accept": "*/*"
+    },
+    "headersAbsent": [
+      "authorization"
+    ],
+    "headersMatch": {
+      "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+    },
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ",
+    "queryAbsent": [
+      "params"
+    ]
+  }
+}

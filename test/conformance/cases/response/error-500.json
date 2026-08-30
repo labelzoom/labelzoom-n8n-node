@@ -1,0 +1,18 @@
+{
+  "id": "response/error-500",
+  "note": "E4/F1: 5xx maps to ServerError and IS retryable. The server logs the real cause and never returns it, so the message is generic by design.",
+  "given": {
+    "status": 500,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "bodyText": "{\"timestamp\":\"2026-08-15T12:00:00.000+00:00\",\"status\":500,\"error\":\"Internal Server Error\",\"message\":\"Error processing conversion request\",\"path\":\"/api/v2/convert/zpl/to/epl\"}"
+  },
+  "expect": {
+    "error": {
+      "kind": "ServerError",
+      "status": 500,
+      "message": "Error processing conversion request"
+    }
+  }
+}

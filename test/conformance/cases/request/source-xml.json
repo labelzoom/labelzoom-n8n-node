@@ -1,0 +1,30 @@
+{
+  "id": "request/source-xml",
+  "note": "B1: xml source sends Content-Type application/xml",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "xml",
+    "target": "zpl",
+    "bodyText": "<labelZoomXml/>"
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/xml/to/zpl",
+    "headers": {
+      "content-type": "application/xml",
+      "accept": "*/*"
+    },
+    "headersAbsent": [
+      "authorization"
+    ],
+    "headersMatch": {
+      "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+    },
+    "bodyText": "<labelZoomXml/>",
+    "queryAbsent": [
+      "params"
+    ]
+  }
+}

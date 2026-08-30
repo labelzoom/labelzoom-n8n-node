@@ -1,0 +1,20 @@
+{
+  "id": "response/error-429-retry-after",
+  "note": "E2/E3: this body uses 'error', not 'message', so extraction correctly falls through to the raw body. Do not special-case it.",
+  "given": {
+    "status": 429,
+    "headers": {
+      "content-type": "application/json",
+      "retry-after": "60"
+    },
+    "bodyText": "{\"error\":\"Too many requests. Please try again later.\"}"
+  },
+  "expect": {
+    "error": {
+      "kind": "RateLimited",
+      "status": 429,
+      "retryAfterSeconds": 60,
+      "message": "{\"error\":\"Too many requests. Please try again later.\"}"
+    }
+  }
+}

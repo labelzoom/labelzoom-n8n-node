@@ -1,0 +1,13 @@
+{
+  "language": "ruby",
+  "skips": [
+    {
+      "id": "typecheck/source-format-not-accepted-as-target",
+      "reason": "Ruby has no compile step. Target validation is enforced at runtime by raising ArgumentError; covered by the validation/* cases instead."
+    },
+    {
+      "id": "typecheck/url-is-not-a-target",
+      "reason": "Ruby has no compile step. Target validation is enforced at runtime by raising ArgumentError; covered by the validation/* cases instead."
+    }
+  ]
+}

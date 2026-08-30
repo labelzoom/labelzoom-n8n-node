@@ -1,0 +1,40 @@
+{
+  "id": "retry/backoff-doubles",
+  "note": "F2: 1s / 2s / 4s.",
+  "given": {
+    "maxRetries": 3,
+    "responses": [
+      {
+        "status": 503,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "bodyText": "{\"message\":\"x\"}"
+      },
+      {
+        "status": 503,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "bodyText": "{\"message\":\"x\"}"
+      },
+      {
+        "status": 200,
+        "headers": {
+          "content-type": "text/plain"
+        },
+        "bodyText": "^XA^XZ"
+      }
+    ]
+  },
+  "expect": {
+    "attempts": 3,
+    "sleepsSeconds": [
+      1,
+      2
+    ],
+    "result": {
+      "text": "^XA^XZ"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "id": "response/error-403-paid-feature",
+  "note": "E5: the most common anonymous-tier failure gets a first-class flag so callers do not string-match.",
+  "given": {
+    "status": 403,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "bodyText": "{\"timestamp\":\"2026-08-15T12:00:00.000+00:00\",\"status\":403,\"error\":\"Forbidden\",\"message\":\"JSON export is a paid feature\",\"path\":\"/api/v2/convert/zpl/to/epl\"}"
+  },
+  "expect": {
+    "error": {
+      "kind": "Forbidden",
+      "status": 403,
+      "message": "JSON export is a paid feature",
+      "isPaidFeature": true
+    }
+  }
+}

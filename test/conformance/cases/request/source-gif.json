@@ -1,0 +1,30 @@
+{
+  "id": "request/source-gif",
+  "note": "B1: gif source sends Content-Type image/gif",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "gif",
+    "target": "zpl",
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ"
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/gif/to/zpl",
+    "headers": {
+      "content-type": "image/gif",
+      "accept": "*/*"
+    },
+    "headersAbsent": [
+      "authorization"
+    ],
+    "headersMatch": {
+      "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+    },
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ",
+    "queryAbsent": [
+      "params"
+    ]
+  }
+}

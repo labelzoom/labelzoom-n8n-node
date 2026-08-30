@@ -1,0 +1,12 @@
+{
+	"node": "n8n-nodes-base.labelZoom",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": ["Utility", "Development"],
+	"resources": {
+		"credentialDocumentation": [
+			{ "url": "https://docs.labelzoom.com/getting-started/authentication/" }
+		],
+		"primaryDocumentation": [{ "url": "https://docs.labelzoom.com/guides/n8n/" }]
+	}
+}

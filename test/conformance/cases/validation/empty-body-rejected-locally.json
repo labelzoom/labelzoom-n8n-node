@@ -1,0 +1,15 @@
+{
+  "id": "validation/empty-body-rejected-locally",
+  "note": "The gateway rejects a zero-length body with 400; catching it locally saves a round trip and gives a clearer message.",
+  "given": {
+    "source": "zpl",
+    "target": "png",
+    "bodyText": ""
+  },
+  "expect": {
+    "validationError": {
+      "parameter": "body"
+    },
+    "requestsSent": 0
+  }
+}

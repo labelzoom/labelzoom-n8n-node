@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      # The n8n community-node linter. This is the verification gate, not a
+      # style check: it enforces the no-dependencies, no-filesystem and
+      # no-env-vars rules that n8n Cloud requires.
+      - run: npm run lint
+      - run: npm run build
+      - run: npm test
+
+  conformance-pin:
+    # The vendored fixtures are the contract this node is held to. If someone
+    # edits test/conformance/ by hand to make a failing case pass, this fails.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: node scripts/sync-conformance.mjs --check

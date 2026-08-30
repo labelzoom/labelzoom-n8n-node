@@ -1,0 +1,18 @@
+{
+  "id": "response/error-502-html-body",
+  "note": "E2: a non-JSON body falls through to raw text rather than throwing a parse error.",
+  "given": {
+    "status": 502,
+    "headers": {
+      "content-type": "text/html"
+    },
+    "bodyText": "<html><body>Bad Gateway</body></html>"
+  },
+  "expect": {
+    "error": {
+      "kind": "ServerError",
+      "status": 502,
+      "message": "<html><body>Bad Gateway</body></html>"
+    }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "id": "retry/exhausts-and-raises-last-error",
+  "note": "F2: maxRetries=2 means 3 attempts total; the final error surfaces.",
+  "given": {
+    "maxRetries": 2,
+    "responses": [
+      {
+        "status": 500,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "bodyText": "{\"message\":\"x\"}"
+      },
+      {
+        "status": 500,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "bodyText": "{\"message\":\"x\"}"
+      },
+      {
+        "status": 500,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "bodyText": "{\"message\":\"x\"}"
+      }
+    ]
+  },
+  "expect": {
+    "attempts": 3,
+    "sleepsSeconds": [
+      1,
+      2
+    ],
+    "error": {
+      "kind": "ServerError",
+      "status": 500
+    }
+  }
+}

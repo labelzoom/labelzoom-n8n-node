@@ -1,0 +1,35 @@
+{
+  "id": "request/param-watermark",
+  "note": "C2: watermark travels inside the single ?params= JSON object.",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "zpl",
+    "target": "png",
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ",
+    "options": {
+      "watermark": true
+    }
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/zpl/to/png",
+    "headers": {
+      "content-type": "text/plain",
+      "accept": "*/*"
+    },
+    "headersAbsent": [
+      "authorization"
+    ],
+    "headersMatch": {
+      "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+    },
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ",
+    "queryJson": {
+      "params": {
+        "watermark": true
+      }
+    }
+  }
+}

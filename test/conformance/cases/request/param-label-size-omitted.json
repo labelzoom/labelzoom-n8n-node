@@ -1,0 +1,29 @@
+{
+  "id": "request/param-label-size-omitted",
+  "note": "C4: omitting the label size must emit no label key at all -- that absence is what asks the API to detect the label's dimensions from its content. An SDK that helpfully defaults it to 4x6 silently overrides detection for every caller who never set a size.",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "zpl",
+    "target": "png",
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ",
+    "options": {
+      "dpi": 203
+    }
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/zpl/to/png",
+    "queryJson": {
+      "params": {
+        "dpi": 203
+      }
+    },
+    "queryJsonAbsentKeys": {
+      "params": [
+        "label"
+      ]
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "response/error-403-not-paid-feature",
+  "note": "E5: not every 403 is a paywall.",
+  "given": {
+    "status": 403,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "bodyText": "{\"message\":\"This API key lacks the \\\"convert\\\" scope\"}"
+  },
+  "expect": {
+    "error": {
+      "kind": "Forbidden",
+      "status": 403,
+      "isPaidFeature": false
+    }
+  }
+}

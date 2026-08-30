@@ -1,0 +1,30 @@
+{
+  "id": "request/source-bmp",
+  "note": "B1: bmp source sends Content-Type image/bmp",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "bmp",
+    "target": "zpl",
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ"
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/bmp/to/zpl",
+    "headers": {
+      "content-type": "image/bmp",
+      "accept": "*/*"
+    },
+    "headersAbsent": [
+      "authorization"
+    ],
+    "headersMatch": {
+      "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+    },
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ",
+    "queryAbsent": [
+      "params"
+    ]
+  }
+}

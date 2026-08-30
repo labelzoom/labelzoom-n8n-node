@@ -1,0 +1,10 @@
+{
+	"language": "n8n",
+	"note": "Every skip needs a written reason. A suite that quietly runs a subset reports success exactly like one that runs all of them.",
+	"skips": [
+		{
+			"id": "request/auth-from-environment",
+			"reason": "n8n community nodes are forbidden from reading environment variables (verification rule: nodes must not interact with env vars or read/write files), so LABELZOOM_API_KEY cannot be a credential source. The node's only source of a key is its credential, which request/auth-present covers. The companion rule this case pairs with — an explicitly empty credential must NOT fall back to the environment — is still asserted by request/auth-empty-string-forces-anonymous, which passes."
+		}
+	]
+}

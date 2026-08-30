@@ -1,0 +1,86 @@
+{
+  "id": "request/params-kitchen-sink",
+  "note": "C1/C2/C5: every modeled parameter in one request, in a single ?params= object.",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "pdf",
+    "target": "zpl",
+    "bodyText": "%PDF-1.4",
+    "options": {
+      "dpi": 300,
+      "rotation": 180,
+      "scaling": 75.0,
+      "colorMode": "GRAYSCALE",
+      "darkness": 60,
+      "position": {
+        "x": 5,
+        "y": 15
+      },
+      "watermark": false,
+      "label": {
+        "width": 4.0,
+        "height": 6.0
+      },
+      "pdf": {
+        "conversionMode": "IMAGE",
+        "pageNumber": 2
+      },
+      "zpl": {
+        "commandsToIgnore": [
+          "^PQ",
+          "^MD"
+        ],
+        "imageCompression": "Z64"
+      },
+      "data": [
+        {
+          "sku": "1234"
+        }
+      ]
+    }
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/pdf/to/zpl",
+    "headers": {
+      "content-type": "application/pdf",
+      "accept": "*/*"
+    },
+    "queryJson": {
+      "params": {
+        "dpi": 300,
+        "rotation": 180,
+        "scaling": 75.0,
+        "colorMode": "GRAYSCALE",
+        "darkness": 60,
+        "position": {
+          "x": 5,
+          "y": 15
+        },
+        "watermark": false,
+        "label": {
+          "width": 4.0,
+          "height": 6.0
+        },
+        "pdf": {
+          "conversionMode": "IMAGE",
+          "pageNumber": 2
+        },
+        "zpl": {
+          "commandsToIgnore": [
+            "^PQ",
+            "^MD"
+          ],
+          "imageCompression": "Z64"
+        },
+        "data": [
+          {
+            "sku": "1234"
+          }
+        ]
+      }
+    }
+  }
+}

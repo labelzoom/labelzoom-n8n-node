@@ -1,0 +1,10 @@
+{
+  "id": "typecheck/url-is-not-a-target",
+  "note": "1.1: URL is source-only -- it is a fetch instruction, not a format. There is no TargetFormat.URL to name, so this must not compile.",
+  "given": {
+    "snippet": "client.convert().fromZpl(body).to(URL)"
+  },
+  "expect": {
+    "compileError": true
+  }
+}

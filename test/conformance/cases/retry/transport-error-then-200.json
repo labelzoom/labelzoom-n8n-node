@@ -1,0 +1,28 @@
+{
+  "id": "retry/transport-error-then-200",
+  "note": "F1: transport-level failures are retryable.",
+  "given": {
+    "maxRetries": 2,
+    "responses": [
+      {
+        "transportError": "connect"
+      },
+      {
+        "status": 200,
+        "headers": {
+          "content-type": "text/plain"
+        },
+        "bodyText": "^XA^XZ"
+      }
+    ]
+  },
+  "expect": {
+    "attempts": 2,
+    "sleepsSeconds": [
+      1
+    ],
+    "result": {
+      "text": "^XA^XZ"
+    }
+  }
+}

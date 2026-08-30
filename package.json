@@ -1,0 +1,70 @@
+{
+	"name": "n8n-nodes-labelzoom",
+	"version": "0.1.0",
+	"description": "n8n community node for LabelZoom \u2014 convert barcode labels between ZPL, EPL, TSPL, DPL, PDF and images, and print them to cloud-connected thermal printers",
+	"license": "MIT",
+	"homepage": "https://www.labelzoom.com",
+	"keywords": [
+		"n8n-community-node-package",
+		"labelzoom",
+		"zpl",
+		"epl",
+		"tspl",
+		"dpl",
+		"zebra",
+		"barcode",
+		"label",
+		"thermal-printer",
+		"pdf-to-zpl"
+	],
+	"author": {
+		"name": "RJF Technology Solutions LLC",
+		"email": "support@labelzoom.com"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/labelzoom/labelzoom-n8n-node.git"
+	},
+	"bugs": {
+		"url": "https://github.com/labelzoom/labelzoom-n8n-node/issues"
+	},
+	"engines": {
+		"node": ">=20.19"
+	},
+	"scripts": {
+		"build": "n8n-node build",
+		"build:watch": "tsc --watch",
+		"dev": "n8n-node dev",
+		"lint": "n8n-node lint",
+		"lint:fix": "n8n-node lint --fix",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
+		"sync-conformance": "node scripts/sync-conformance.mjs",
+		"prepublishOnly": "n8n-node prerelease"
+	},
+	"files": [
+		"dist"
+	],
+	"n8n": {
+		"n8nNodesApiVersion": 1,
+		"strict": true,
+		"credentials": [
+			"dist/credentials/LabelZoomApi.credentials.js"
+		],
+		"nodes": [
+			"dist/nodes/LabelZoom/LabelZoom.node.js"
+		]
+	},
+	"devDependencies": {
+		"@n8n/node-cli": "^0.45.4",
+		"@types/node": "^22.15.0",
+		"eslint": "9.39.4",
+		"prettier": "3.8.3",
+		"typescript": "5.9.3",
+		"vitest": "^3.2.4"
+	},
+	"peerDependencies": {
+		"n8n-workflow": "*"
+	}
+}

@@ -1,0 +1,30 @@
+{
+  "id": "request/param-data-single-object-is-wrapped",
+  "note": "C3: a bare object is wrapped into a one-element array before serialization.",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "zpl",
+    "target": "png",
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ",
+    "options": {
+      "data": {
+        "name": "ACME"
+      }
+    }
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/zpl/to/png",
+    "queryJson": {
+      "params": {
+        "data": [
+          {
+            "name": "ACME"
+          }
+        ]
+      }
+    }
+  }
+}
