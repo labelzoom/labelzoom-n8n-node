@@ -1,31 +1,152 @@
 name: Publish
 
+# Publishes n8n-nodes-labelzoom to npm via Trusted Publishing (OIDC) — no token, no secret.
+#
+# The FILENAME of this workflow is a matched claim in the npm trusted publisher policy
+# (`npm trust github n8n-nodes-labelzoom --repo labelzoom/labelzoom-n8n-node --file publish.yml`).
+# Renaming this file silently breaks publishing, and npm does not validate the policy when you
+# save it, so the failure surfaces only at publish time.
+#
+# n8n has required verified community nodes to be published from a GitHub Action with npm
+# provenance since 2026-05-01. Trusted publishing satisfies that without a stored credential.
+
 on:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Build and verify without publishing'
+        type: boolean
+        default: false
+  # A published GitHub Release, not a bare tag push.
+  #
+  # Creating a release from an EXISTING tag fires no push event at all, so tag-push silently
+  # does nothing for the most common release flow. Configuring both would be worse: a release
+  # that creates its tag fires both events and tries to publish the same version twice.
   release:
     types: [published]
-  workflow_dispatch:
 
-permissions:
-  contents: read
-  # Required for npm provenance. n8n has required verified community nodes to be
-  # published from a GitHub Action with a provenance statement since 2026-05-01;
-  # publishing from a laptop is no longer accepted.
-  id-token: write
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions: {}
 
 jobs:
   publish:
+    name: publish
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      id-token: write   # required for the OIDC token npm exchanges for publish rights
+      contents: read
+
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: 22
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
           registry-url: https://registry.npmjs.org
-          cache: npm
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npm run lint
-      - run: npm test
-      - run: npm publish --provenance --access public
+          # No `cache: npm` here, deliberately -- unlike ci.yml. A restored cache is
+          # attacker-influenced input, and anything it plants would be baked into a package
+          # that is then signed with provenance and trusted by every consumer.
+
+      # Trusted publishing needs npm >= 11.5.1. Node 24 bundles 11.16.x, so nothing needs
+      # installing -- which matters here: `npm install -g npm@latest` would be an unpinned
+      # network dependency inside the job that publishes signed artifacts.
+      #
+      # Asserted rather than assumed: the previous version of this workflow pinned Node 22,
+      # whose bundled npm 10.x cannot do trusted publishing at all, and that would have
+      # surfaced as a confusing authentication error rather than a clear one.
+      - name: Verify npm supports trusted publishing
+        run: |
+          set -euo pipefail
+          npm_version="$(npm --version)"
+          echo "npm ${npm_version}, node $(node --version)"
+          # sort -V rather than a hand-rolled field compare, which gets 11.5.0 wrong.
+          oldest="$(printf '%s\n' "11.5.1" "$npm_version" | sort -V | head -n1)"
+          if [ "$oldest" != "11.5.1" ] && [ "$npm_version" != "11.5.1" ]; then
+            echo "::error::npm ${npm_version} is too old for trusted publishing (need >= 11.5.1)"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # The n8n community-node linter, in strict mode. This is the verification gate, not a
+      # style check: it enforces the no-dependencies, no-filesystem and no-env-vars rules that
+      # n8n Cloud requires, so a release must not skip it.
+      - name: Lint
+        run: npm run lint
+
+      # 101 tests, including the 83 shared conformance fixtures and the assertion that every
+      # one of them executed.
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      # A tag must agree with the version it claims to release, or `v0.1.1` quietly publishes
+      # whatever package.json happens to say.
+      - name: Verify tag matches package version
+        if: github.event_name == 'release'
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # Passed as an env var rather than interpolated into the script: a tag name is
+          # attacker-influenced text, and inlining it into `run:` is template injection.
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          tag_version="${RELEASE_TAG#v}"
+          pkg_version="$(node -p "require('./package.json').version")"
+          echo "tag=$tag_version package.json=$pkg_version"
+          if [ "$tag_version" != "$pkg_version" ]; then
+            echo "::error::Tag ${RELEASE_TAG} does not match package.json version ${pkg_version}"
+            exit 1
+          fi
+
+      # An empty or half-built tarball publishes happily and leaves n8n unable to load the
+      # node, so check the artifact rather than trusting that the build step ran. The two JS
+      # entry points asserted here are exactly the paths package.json's `n8n` block points at;
+      # the icon and codex JSON are copied by the build rather than compiled, so they are the
+      # ones most likely to go missing silently.
+      - name: Verify the tarball contains the build output
+        run: |
+          set -euo pipefail
+          npm pack --silent >/dev/null
+          tar -tzf n8n-nodes-labelzoom-*.tgz > /tmp/tarball.txt
+          cat /tmp/tarball.txt
+          for required in \
+            package/dist/nodes/LabelZoom/LabelZoom.node.js \
+            package/dist/credentials/LabelZoomApi.credentials.js \
+            package/dist/nodes/LabelZoom/LabelZoom.node.json \
+            package/dist/icons/labelzoom.svg \
+            package/README.md \
+            package/LICENSE
+          do
+            grep -qx "$required" /tmp/tarball.txt \
+              || { echo "::error::$required is missing from the tarball"; exit 1; }
+          done
+          rm -f n8n-nodes-labelzoom-*.tgz
+
+      # No NODE_AUTH_TOKEN and no --provenance flag: trusted publishing supplies the credential
+      # via OIDC and attaches provenance automatically.
+      #
+      # RELEASE_MODE is required by `prepublishOnly: n8n-node prerelease`, the CLI's guard
+      # against an accidental `npm publish` from a laptop. The guard stays; CI satisfies it.
+      - name: Publish to npm
+        if: ${{ !inputs.dry-run }}
+        run: npm publish --access public
+        env:
+          RELEASE_MODE: 'true'
+
+      - name: Dry run summary
+        if: ${{ inputs.dry-run }}
+        run: echo "Dry run complete - built and verified, publish skipped."
