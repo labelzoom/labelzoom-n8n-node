@@ -102,6 +102,7 @@ export async function convertTemplate(
 		query: targetFormat === '' ? undefined : { target: targetFormat },
 		body: JSON.stringify(mergeData),
 		contentType: 'application/json',
+		requireAuth: true,
 	});
 
 	// The endpoint reports what it actually produced, which may be the template's
