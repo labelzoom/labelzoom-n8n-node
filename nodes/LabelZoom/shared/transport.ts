@@ -42,6 +42,17 @@ export interface LabelZoomRequest {
 	body?: Buffer | string;
 	contentType?: string;
 	headers?: Record<string, string>;
+	/**
+	 * Fail loudly when no credential is configured, instead of falling back to an
+	 * anonymous request.
+	 *
+	 * Only plain conversion has an anonymous mode. Everything else is
+	 * account-scoped — a template belongs to an account, a print job goes to *your*
+	 * printer — so an anonymous call there can only ever come back 401, and the
+	 * user would be left staring at a server error caused by a missing local
+	 * setting.
+	 */
+	requireAuth?: boolean;
 }
 
 /**
@@ -246,6 +257,17 @@ export async function labelZoomRequest(
 	const url = buildUrl(baseUrl, request);
 	const hasApiKey = typeof credentials?.apiKey === 'string' && credentials.apiKey.trim() !== '';
 
+	if (request.requireAuth === true && !hasApiKey) {
+		throw new NodeOperationError(
+			this.getNode(),
+			'This operation needs a LabelZoom API key',
+			{
+				description:
+					'Printers and Print Templates belong to your account, so they cannot be used anonymously. Add a LabelZoom API credential to this node — the key needs the "print" scope for printing (which also grants convert).',
+			},
+		);
+	}
+
 	const headers: Record<string, string> = {
 		// Rule B2: ALWAYS `*/*`, never the target's media type and never a q-value.
 		// The backend's Spring `produces` list omits image/gif, image/bmp and
@@ -336,6 +358,9 @@ export async function labelZoomJsonRequest(
 		path,
 		query,
 		headers,
+		// Every JSON endpoint this wrapper serves — printers, jobs, templates — is
+		// account-scoped, so none of them has an anonymous mode.
+		requireAuth: true,
 		...(body === undefined
 			? {}
 			: { body: JSON.stringify(body), contentType: 'application/json' }),

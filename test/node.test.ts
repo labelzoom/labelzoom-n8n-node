@@ -16,6 +16,7 @@ vi.mock('n8n-workflow', async (importOriginal) => {
 	};
 });
 
+import { LabelZoom } from '../nodes/LabelZoom/LabelZoom.node';
 import { convert } from '../nodes/LabelZoom/resources/label/convert';
 import { getPrinters } from '../nodes/LabelZoom/listSearch/getPrinters';
 import { getTemplates } from '../nodes/LabelZoom/listSearch/getTemplates';
@@ -369,5 +370,72 @@ describe('print input modes', () => {
 		});
 
 		await expect(print.call(ctx, 0)).rejects.toThrow(/Expected a print job from LabelZoom/);
+	});
+});
+
+describe('credential declaration', () => {
+	// n8n resolves a node's credential with `.find(c => c.name === type)` and then
+	// requires THAT entry's displayOptions to match the current parameters, or it
+	// throws "Credentials not found". So a second declaration of the same name is
+	// dead weight at best, and at worst — as shipped in 0.1.0 — scopes the only
+	// consulted entry to one operation and silently breaks every other one.
+	it('declares each credential name exactly once', () => {
+		const names = new LabelZoom().description.credentials?.map((c) => c.name) ?? [];
+		expect(names).toEqual([...new Set(names)]);
+	});
+
+	// A displayOptions gate on the single entry is the same bug by another route:
+	// it makes the credential unresolvable everywhere the gate does not match.
+	it('puts no displayOptions on the single credential entry', () => {
+		for (const credential of new LabelZoom().description.credentials ?? []) {
+			expect(credential.displayOptions, credential.name).toBeUndefined();
+		}
+	});
+});
+
+describe('missing credential', () => {
+	const printParams = {
+		printerId: { mode: 'list', value: 'printer-1' },
+		sourceFormat: 'zpl',
+		inputType: 'text',
+		labelContent: '^XA^XZ',
+		idempotencyKey: '',
+		waitForCompletion: false,
+		options: {},
+	};
+
+	it('explains that Print needs a key, rather than sending an anonymous request', async () => {
+		// The failure this replaces: the request went out unauthenticated and the
+		// user saw a bare "401 Unauthorized" from the server for what was actually a
+		// missing local setting.
+		const { ctx, requests } = makeHarness({ parameters: printParams, responses: [] });
+
+		await expect(print.call(ctx, 0)).rejects.toThrow(/needs a LabelZoom API key/);
+		expect(requests, 'must not reach the network').toHaveLength(0);
+	});
+
+	it('explains that the printer dropdown needs a key', async () => {
+		const { ctx, requests } = makeHarness({ responses: [] });
+
+		await expect(getPrinters.call(ctx)).rejects.toThrow(/needs a LabelZoom API key/);
+		expect(requests).toHaveLength(0);
+	});
+
+	it('still lets plain Convert run anonymously', async () => {
+		// The free tier is a real feature: no credential, watermarked output.
+		const { ctx, requests } = makeHarness({
+			parameters: {
+				sourceFormat: 'zpl',
+				targetFormat: 'pdf',
+				inputType: 'text',
+				labelContent: '^XA^XZ',
+				outputBinaryPropertyName: 'data',
+				options: {},
+			},
+			responses: [{ status: 200, headers: { 'content-type': 'application/pdf' }, bodyText: '%PDF-1.4' }],
+		});
+
+		await convert.call(ctx, 0);
+		expect(requests[0].headers.authorization, 'anonymous means no header at all').toBeUndefined();
 	});
 });

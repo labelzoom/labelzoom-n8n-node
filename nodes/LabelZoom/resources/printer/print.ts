@@ -133,6 +133,7 @@ export async function print(
 		body: document,
 		contentType: resolveContentType(inputType, sourceFormat),
 		headers,
+		requireAuth: true,
 	});
 
 	// The print endpoint answers JSON, but the request is made in raw-bytes mode,

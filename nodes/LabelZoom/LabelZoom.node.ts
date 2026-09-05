@@ -66,27 +66,24 @@ export class LabelZoom implements INodeType {
 		usableAsTool: true,
 		inputs: [NodeConnectionTypes.Main],
 		outputs: [NodeConnectionTypes.Main],
+		// EXACTLY ONE entry per credential name, and no displayOptions on it.
+		//
+		// n8n resolves a node's credential with `.find(c => c.name === type)`, so only
+		// the FIRST declaration of a given name is ever consulted — and it then
+		// requires that entry's displayOptions to match the *current* parameters or it
+		// throws "Credentials not found". Declaring the same name several times to
+		// vary `required` per operation therefore breaks every operation the first
+		// entry does not cover: the credential silently fails to resolve and the
+		// request goes out unauthenticated.
+		//
+		// `required` cannot vary by operation for a single credential, and plain
+		// Convert genuinely works anonymously on the free tier, so this is optional.
+		// Operations that need a key assert it themselves and say so plainly — see
+		// `requireAuth` in shared/transport.ts.
 		credentials: [
 			{
-				// Plain conversion works anonymously on the free tier (watermarked),
-				// so the node stays usable with no setup at all.
 				name: 'labelZoomApi',
 				required: false,
-				displayOptions: { show: { resource: ['label'], operation: ['convert'] } },
-			},
-			{
-				// Everything else reads or writes account-scoped data — a template
-				// belongs to an account, and a print job goes to *your* printer — so
-				// there is no anonymous equivalent and a missing credential should be
-				// caught in the editor rather than as a 401 at run time.
-				name: 'labelZoomApi',
-				required: true,
-				displayOptions: { show: { resource: ['label'], operation: ['convertTemplate'] } },
-			},
-			{
-				name: 'labelZoomApi',
-				required: true,
-				displayOptions: { show: { resource: ['printer'] } },
 			},
 		],
 		properties: [
