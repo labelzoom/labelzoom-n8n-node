@@ -148,6 +148,7 @@ claim to be LabelZoom Studio, whose prefix the server special-cases — is asser
 
 ## Resources
 
+- [n8n integration guide](https://docs.labelzoom.com/integrations/n8n/) — this node, end to end
 - [LabelZoom API docs](https://docs.labelzoom.com)
 - [Conversion parameters](https://docs.labelzoom.com/reference/conversion-parameters/)
 - [Cloud Print API](https://docs.labelzoom.com/reference/cloud-print-api/)

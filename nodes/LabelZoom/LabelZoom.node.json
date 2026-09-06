@@ -7,6 +7,6 @@
 		"credentialDocumentation": [
 			{ "url": "https://docs.labelzoom.com/getting-started/authentication/" }
 		],
-		"primaryDocumentation": [{ "url": "https://docs.labelzoom.com/guides/n8n/" }]
+		"primaryDocumentation": [{ "url": "https://docs.labelzoom.com/integrations/n8n/" }]
 	}
 }
