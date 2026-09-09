@@ -17,6 +17,7 @@ vi.mock('n8n-workflow', async (importOriginal) => {
 });
 
 import { LabelZoom } from '../nodes/LabelZoom/LabelZoom.node';
+import codex from '../nodes/LabelZoom/LabelZoom.node.json';
 import { convert } from '../nodes/LabelZoom/resources/label/convert';
 import { getPrinters } from '../nodes/LabelZoom/listSearch/getPrinters';
 import { getTemplates } from '../nodes/LabelZoom/listSearch/getTemplates';
@@ -24,6 +25,7 @@ import { print } from '../nodes/LabelZoom/resources/printer/print';
 import { printTemplate } from '../nodes/LabelZoom/resources/printer/printTemplate';
 import { isTextualTarget, TARGET_FORMATS } from '../nodes/LabelZoom/shared/formats';
 import { makeHarness, type ScriptedResponse } from './helpers/harness';
+import pkg from '../package.json';
 
 const KEY = { apiKey: 'lz_live_' + 'a'.repeat(64) };
 const JOB_ACCEPTED: ScriptedResponse = {
@@ -390,6 +392,20 @@ describe('credential declaration', () => {
 		for (const credential of new LabelZoom().description.credentials ?? []) {
 			expect(credential.displayOptions, credential.name).toBeUndefined();
 		}
+	});
+});
+
+describe('codex', () => {
+	// The codex `node` field must be `<npm package name>.<node name>`. The scaffold
+	// default is `n8n-nodes-base.<name>` — the namespace reserved for nodes bundled
+	// in n8n core — and shipping that is what n8n's verification review rejected
+	// 0.1.2 for. Nothing else catches it: the strict-mode linter passes on it, and
+	// the release workflow only checks the file is present in the tarball.
+	//
+	// Derived from package.json and the node description rather than hard-coded, so
+	// renaming either side without the other fails here.
+	it('gives the codex a node type matching the package name', () => {
+		expect(codex.node).toBe(`${pkg.name}.${new LabelZoom().description.name}`);
 	});
 });
 
