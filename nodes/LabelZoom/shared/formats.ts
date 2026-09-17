@@ -133,7 +133,7 @@ export function sourceWireToken(format: string): string {
 const FORMAT_LABELS: Record<string, string> = {
 	zpl: 'ZPL (Zebra)',
 	epl: 'EPL (Eltron)',
-	ipl: 'IPL (Intermec)',
+	ipl: 'IPL (Honeywell)',
 	tspl: 'TSPL (TSC)',
 	dpl: 'DPL (Datamax)',
 	sbpl: 'SBPL (SATO)',
