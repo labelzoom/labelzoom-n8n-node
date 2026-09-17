@@ -3,7 +3,7 @@
  *
  * The node cannot depend on `@labelzoom/sdk` — n8n verification forbids runtime
  * dependencies — so it re-implements the wire contract by hand. These are the
- * same 83 fixtures the eight language SDKs run, and they are the only thing
+ * same 87 fixtures the eight language SDKs run, and they are the only thing
  * stopping the two implementations from drifting apart.
  *
  * Entirely offline: the HTTP helper is a recording stub, so this passes on a fork
@@ -392,7 +392,7 @@ describe('conformance', () => {
 	 * is asserted rather than assumed.
 	 */
 	it('covers every declared case', () => {
-		expect(spec.version, 'vendored spec version').toBe('1.1.0');
+		expect(spec.version, 'vendored spec version').toBe('1.2.0');
 		expect(allCaseIds.length, 'case count').toBe(spec.caseCount);
 
 		for (const [id, reason] of Object.entries(skips)) {

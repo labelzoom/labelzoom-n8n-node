@@ -1,7 +1,7 @@
 # n8n-nodes-labelzoom
 
 An [n8n](https://n8n.io) community node for [LabelZoom](https://www.labelzoom.com) — convert
-barcode labels between ZPL, EPL, TSPL, DPL, PDF, images and XML/JSON, and print them to
+barcode labels between ZPL, EPL, IPL, TSPL, DPL, SBPL, PDF, images and XML/JSON, and print them to
 cloud-connected thermal printers.
 
 The labels in a business rarely arrive in the format the printer wants. A WMS emits ZPL, a
@@ -52,17 +52,18 @@ you're ready to ship.
 | **Convert** | Convert a document between any supported source and target format |
 | **Convert Template** | Fill a Print Template with data and render it, without printing |
 
-Sources: `zpl` `epl` `tspl` `dpl` `xml` `json` `pdf` `png` `bmp` `gif` `jpeg` `jpg` `url`
-Targets: `zpl` `epl` `tspl` `dpl` `xml` `json` `pdf` `png` `bmp` `gif` `jpeg`
+Sources: `zpl` `epl` `ipl` `tspl` `dpl` `sbpl` `xml` `json` `pdf` `png` `bmp` `gif` `jpeg` `jpg` `url`
+Targets: `zpl` `epl` `ipl` `tspl` `dpl` `sbpl` `xml` `json` `pdf` `png` `bmp` `gif` `jpeg`
 
 `url` is a source only — post a link and LabelZoom fetches the document itself. `jpg` is an
 input spelling that normalizes to `jpeg`.
 
-The output is always a **binary field**, because five of the eleven targets are binary. A
+The output is always a **binary field**, because five of the thirteen targets are binary. A
 decoded `text` field is added for `zpl`, `xml` and `json` as a convenience. It is deliberately
-*not* added for `epl`, `tspl` or `dpl`: those come back as `text/plain` but can inline raw
-bytes (EPL's `GW`, TSPL's `BITMAP`, DPL's leading `STX`), and decoding them to a string would
-corrupt any label carrying graphics.
+*not* added for `epl`, `ipl`, `tspl`, `dpl` or `sbpl`: those come back as `text/plain` but can
+inline raw bytes (EPL's `GW`, IPL's `STX`/`ETX` framing, TSPL's `BITMAP`, DPL's leading `STX`,
+SBPL's `ESC`-prefixed commands), and decoding them to a string would corrupt any label carrying
+graphics.
 
 Options cover the full parameter set — DPI, rotation, scaling, colour mode, darkness, label
 size in inches, position, PDF conversion mode and page number, ZPL image compression and
@@ -127,11 +128,11 @@ npm test
 n8n verification forbids runtime dependencies, so this node cannot call
 [`@labelzoom/sdk`](https://www.npmjs.com/package/@labelzoom/sdk) — it re-implements the
 LabelZoom wire contract by hand. To stop the two drifting apart, it runs the **same
-language-neutral conformance fixtures** the eight official SDKs run: 83 cases pinned from
+language-neutral conformance fixtures** the eight official SDKs run: 87 cases pinned from
 `labelzoom-sdk` covering request shape, error mapping, retry policy and local validation.
 
 ```sh
-npm run sync-conformance             # refresh test/conformance/ from the pinned SDK tag
+npm run sync-conformance             # refresh test/conformance/ from the pinned SDK ref
 node scripts/sync-conformance.mjs --check   # verify it hasn't drifted (CI)
 ```
 

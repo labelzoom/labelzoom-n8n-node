@@ -35,12 +35,13 @@ const JOB_ACCEPTED: ScriptedResponse = {
 };
 
 describe('binary safety', () => {
-	it('never exposes EPL, TSPL or DPL output as decoded text', () => {
-		// All three come back as text/plain but can inline raw bytes: EPL's GW and
-		// TSPL's BITMAP embed a 1-bpp image payload, and DPL output opens with STX.
+	it('never exposes EPL, IPL, TSPL, DPL or SBPL output as decoded text', () => {
+		// All five come back as text/plain but can inline raw bytes: EPL's GW and
+		// TSPL's BITMAP embed a 1-bpp image payload, IPL frames commands in STX/ETX,
+		// DPL output opens with STX, and SBPL prefixes every command with ESC.
 		// Handing those to a downstream node as a string corrupts every label that
 		// carries graphics.
-		for (const format of ['epl', 'tspl', 'dpl']) {
+		for (const format of ['epl', 'ipl', 'tspl', 'dpl', 'sbpl']) {
 			expect(isTextualTarget(format), format).toBe(false);
 		}
 		for (const format of ['zpl', 'xml', 'json']) {

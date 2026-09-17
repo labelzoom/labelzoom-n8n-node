@@ -285,8 +285,8 @@ export async function labelZoomRequest(
 		url,
 		headers,
 		body: request.body,
-		// Raw bytes in, raw bytes out. Five of the eleven targets are binary, and
-		// two of the textual ones can inline binary payloads.
+		// Raw bytes in, raw bytes out. Five of the thirteen targets are binary, and
+		// the printer languages other than ZPL can inline binary payloads.
 		encoding: 'arraybuffer',
 		returnFullResponse: true,
 		// We classify statuses ourselves so retry and error extraction can see the
