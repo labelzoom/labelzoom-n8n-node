@@ -10,8 +10,10 @@
 export const SOURCE_FORMATS = [
 	'zpl',
 	'epl',
+	'ipl',
 	'tspl',
 	'dpl',
+	'sbpl',
 	'xml',
 	'json',
 	'pdf',
@@ -26,8 +28,10 @@ export const SOURCE_FORMATS = [
 export const TARGET_FORMATS = [
 	'zpl',
 	'epl',
+	'ipl',
 	'tspl',
 	'dpl',
+	'sbpl',
 	'xml',
 	'json',
 	'pdf',
@@ -44,8 +48,10 @@ export type TargetFormat = (typeof TARGET_FORMATS)[number];
 const SOURCE_MEDIA_TYPES: Record<SourceFormat, string> = {
 	zpl: 'text/plain',
 	epl: 'text/plain',
+	ipl: 'text/plain',
 	tspl: 'text/plain',
 	dpl: 'text/plain',
+	sbpl: 'text/plain',
 	xml: 'application/xml',
 	json: 'application/json',
 	pdf: 'application/pdf',
@@ -61,8 +67,10 @@ const SOURCE_MEDIA_TYPES: Record<SourceFormat, string> = {
 const TARGET_MEDIA_TYPES: Record<TargetFormat, string> = {
 	zpl: 'text/plain',
 	epl: 'text/plain',
+	ipl: 'text/plain',
 	tspl: 'text/plain',
 	dpl: 'text/plain',
+	sbpl: 'text/plain',
 	xml: 'application/xml',
 	json: 'application/json',
 	pdf: 'application/pdf',
@@ -75,8 +83,10 @@ const TARGET_MEDIA_TYPES: Record<TargetFormat, string> = {
 const TARGET_EXTENSIONS: Record<TargetFormat, string> = {
 	zpl: 'zpl',
 	epl: 'epl',
+	ipl: 'ipl',
 	tspl: 'txt',
 	dpl: 'dpl',
+	sbpl: 'sbpl',
 	xml: 'xml',
 	json: 'json',
 	pdf: 'pdf',
@@ -89,11 +99,12 @@ const TARGET_EXTENSIONS: Record<TargetFormat, string> = {
 /**
  * Targets whose bytes are safe to expose as a decoded string.
  *
- * `epl`, `tspl` and `dpl` are deliberately absent even though they come back as
- * `text/plain`: EPL's `GW` and TSPL's `BITMAP` commands inline a raw 1-bpp image
- * payload, and DPL output opens with a literal STX (0x02). Decoding those to a
- * string corrupts every label that carries graphics, so the node only ever hands
- * them onward as binary.
+ * `epl`, `ipl`, `tspl`, `dpl` and `sbpl` are deliberately absent even though they
+ * come back as `text/plain`: EPL's `GW` and TSPL's `BITMAP` commands inline a raw
+ * 1-bpp image payload, IPL frames commands in STX/ETX and packs bitmap columns,
+ * DPL output opens with a literal STX (0x02), and SBPL prefixes every command with
+ * ESC. Decoding those to a string corrupts every label that carries graphics, so
+ * the node only ever hands them onward as binary.
  */
 const TEXTUAL_TARGETS = new Set<TargetFormat>(['zpl', 'xml', 'json']);
 
@@ -122,8 +133,10 @@ export function sourceWireToken(format: string): string {
 const FORMAT_LABELS: Record<string, string> = {
 	zpl: 'ZPL (Zebra)',
 	epl: 'EPL (Eltron)',
+	ipl: 'IPL (Intermec)',
 	tspl: 'TSPL (TSC)',
 	dpl: 'DPL (Datamax)',
+	sbpl: 'SBPL (SATO)',
 	xml: 'XML (LBXML)',
 	json: 'JSON (LabelZoom)',
 	pdf: 'PDF',

@@ -86,7 +86,7 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      # 101 tests, including the 83 shared conformance fixtures and the assertion that every
+      # 111 tests, including the 87 shared conformance fixtures and the assertion that every
       # one of them executed.
       - name: Test
         run: npm test

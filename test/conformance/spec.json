@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "contract": "../docs/API_CONTRACT.md",
   "defaults": {
     "baseUrl": "https://api.labelzoom.com",
@@ -15,7 +15,7 @@
     "RateLimited",
     "ServerError"
   ],
-  "caseCount": 83,
+  "caseCount": 87,
   "cases": [
     "request/auth-absent",
     "request/auth-empty-string-forces-anonymous",
@@ -47,12 +47,14 @@
     "request/source-dpl",
     "request/source-epl",
     "request/source-gif",
+    "request/source-ipl",
     "request/source-jpeg",
     "request/source-jpg-normalizes-to-jpeg",
     "request/source-json",
     "request/source-pdf",
     "request/source-pdf-base64-text-mode",
     "request/source-png",
+    "request/source-sbpl",
     "request/source-tspl",
     "request/source-url",
     "request/source-xml",
@@ -61,10 +63,12 @@
     "request/target-dpl",
     "request/target-epl",
     "request/target-gif",
+    "request/target-ipl",
     "request/target-jpeg",
     "request/target-json",
     "request/target-pdf",
     "request/target-png",
+    "request/target-sbpl",
     "request/target-tspl",
     "request/target-xml",
     "request/target-zpl",

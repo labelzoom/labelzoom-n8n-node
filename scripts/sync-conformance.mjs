@@ -23,8 +23,14 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const REPO = 'https://github.com/labelzoom/labelzoom-sdk.git';
-/** Bump deliberately, and review the fixture diff when you do. */
-const REF = 'node/v1.0.0';
+/**
+ * Bump deliberately, and review the fixture diff when you do.
+ *
+ * A tag or a full commit SHA. Prefer a release tag; pin a SHA only when the spec
+ * has moved ahead of the latest SDK release (spec 1.2.0 added IPL and SBPL before
+ * any SDK shipped it).
+ */
+const REF = 'f515214ab872a59c8e21880fd6e7f8f804e0a7c3';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const destination = join(root, 'test', 'conformance');
@@ -33,12 +39,14 @@ const check = process.argv.includes('--check');
 function fetchInto(target) {
 	const workdir = mkdtempSync(join(tmpdir(), 'labelzoom-conformance-'));
 	try {
-		execFileSync(
-			'git',
-			['clone', '--depth', '1', '--branch', REF, '--filter=blob:none', '--sparse', REPO, workdir],
-			{ stdio: 'inherit' },
-		);
-		execFileSync('git', ['sparse-checkout', 'set', 'conformance'], { cwd: workdir, stdio: 'inherit' });
+		// `git clone --branch` cannot take a commit SHA, so fetch the ref explicitly;
+		// that works for tags and SHAs alike.
+		const git = (args) => execFileSync('git', args, { cwd: workdir, stdio: 'inherit' });
+		git(['init', '--quiet']);
+		git(['remote', 'add', 'origin', REPO]);
+		git(['sparse-checkout', 'set', 'conformance']);
+		git(['fetch', '--quiet', '--depth', '1', '--filter=blob:none', 'origin', REF]);
+		git(['checkout', '--quiet', 'FETCH_HEAD']);
 		const commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: workdir, encoding: 'utf8' }).trim();
 
 		rmSync(target, { recursive: true, force: true });
