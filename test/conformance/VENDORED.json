@@ -1,6 +1,6 @@
 {
   "repo": "https://github.com/labelzoom/labelzoom-sdk.git",
-  "ref": "f515214ab872a59c8e21880fd6e7f8f804e0a7c3",
-  "commit": "f515214ab872a59c8e21880fd6e7f8f804e0a7c3",
+  "ref": "node/v1.1.0",
+  "commit": "3fe351416a2a79f75563146fb0e3a98b9ba68602",
   "specVersion": "1.2.0"
 }

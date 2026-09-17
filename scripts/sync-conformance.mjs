@@ -27,10 +27,9 @@ const REPO = 'https://github.com/labelzoom/labelzoom-sdk.git';
  * Bump deliberately, and review the fixture diff when you do.
  *
  * A tag or a full commit SHA. Prefer a release tag; pin a SHA only when the spec
- * has moved ahead of the latest SDK release (spec 1.2.0 added IPL and SBPL before
- * any SDK shipped it).
+ * has moved ahead of the latest SDK release.
  */
-const REF = 'f515214ab872a59c8e21880fd6e7f8f804e0a7c3';
+const REF = 'node/v1.1.0';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const destination = join(root, 'test', 'conformance');
