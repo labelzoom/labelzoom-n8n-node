@@ -5,6 +5,12 @@ updates:
     schedule:
       interval: weekly
     ignore:
+      # @types/node's MAJOR tracks the Node runtime pinned in .nvmrc, not the
+      # newest release line. Patch/minor within the major still flow (grouped
+      # into npm-minor-patch below); a major bump is a runtime decision made by
+      # editing .nvmrc, so Dependabot must not raise it on its own.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
       # TypeScript is held at 6.x on purpose -- 7.0 is not adoptable here yet.
       #
       # TypeScript 7.0 is the Go-native compiler and ships no programmatic API:
