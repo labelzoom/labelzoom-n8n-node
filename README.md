@@ -13,7 +13,11 @@ into two steps in a workflow.
 
 ## Installation
 
-In n8n, go to **Settings → Community nodes → Install** and enter:
+The node is [verified by n8n](https://n8n.io/integrations/labelzoom/), so it installs straight
+from the canvas: open the nodes panel, search for **LabelZoom**, and pick it from **More from the
+community**.
+
+To install it by package name instead, go to **Settings → Community nodes → Install** and enter:
 
 ```
 n8n-nodes-labelzoom
@@ -149,6 +153,7 @@ claim to be LabelZoom Studio, whose prefix the server special-cases — is asser
 
 ## Resources
 
+- [LabelZoom on n8n.io](https://n8n.io/integrations/labelzoom/) — the verified integration listing
 - [n8n integration guide](https://docs.labelzoom.com/integrations/n8n/) — this node, end to end
 - [LabelZoom API docs](https://docs.labelzoom.com)
 - [Conversion parameters](https://docs.labelzoom.com/reference/conversion-parameters/)
