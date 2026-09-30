@@ -24,6 +24,7 @@ import { getTemplates } from '../nodes/LabelZoom/listSearch/getTemplates';
 import { print } from '../nodes/LabelZoom/resources/printer/print';
 import { printTemplate } from '../nodes/LabelZoom/resources/printer/printTemplate';
 import { isTextualTarget, TARGET_FORMATS } from '../nodes/LabelZoom/shared/formats';
+import { LabelZoomValidationError } from '../nodes/LabelZoom/shared/validation';
 import { makeHarness, type ScriptedResponse } from './helpers/harness';
 import pkg from '../package.json';
 
@@ -208,6 +209,174 @@ describe('printer: print template', () => {
 		});
 		await expect(printTemplate.call(ctx, 0)).rejects.toThrow(/single JSON object/);
 		expect(requests).toHaveLength(0);
+	});
+});
+
+describe('printer: copies', () => {
+	const jobResponse = (body: string): ScriptedResponse => ({
+		status: 200,
+		headers: { 'content-type': 'application/json' },
+		bodyText: body,
+	});
+
+	// Both print operations take Copies the same way, so each case runs against
+	// both. `baseSearch` is the exact query string each sends when Copies is left
+	// alone — the request a workflow made before the field existed.
+	const operations = [
+		{
+			name: 'Print',
+			run: print,
+			parameters: (overrides: Record<string, unknown> = {}) => ({
+				printerId: { mode: 'list', value: 'printer-1' },
+				sourceFormat: 'zpl',
+				inputType: 'text',
+				labelContent: '^XA^PQ3^XZ',
+				idempotencyKey: '',
+				waitForCompletion: false,
+				options: {},
+				...overrides,
+			}),
+			baseSearch: '?sourceFormat=zpl',
+		},
+		{
+			name: 'Print Template',
+			run: printTemplate,
+			parameters: (overrides: Record<string, unknown> = {}) => ({
+				printerId: { mode: 'list', value: 'printer-1' },
+				templateId: { mode: 'list', value: 'template-1' },
+				mergeData: '{"orderNumber":"1001"}',
+				validate: true,
+				idempotencyKey: '',
+				...overrides,
+			}),
+			baseSearch: '?validate=true',
+		},
+	];
+
+	describe.each(operations)('$name', ({ run, parameters, baseSearch }) => {
+		it('sends copies when set', async () => {
+			const { ctx, requests } = makeHarness({
+				parameters: parameters({ copies: 5 }),
+				credentials: KEY,
+				responses: [jobResponse('{"jobId":"job-1","status":"dispatched","copies":5}')],
+			});
+			await run.call(ctx, 0);
+
+			expect(requests).toHaveLength(1);
+			expect(requests[0].url.searchParams.get('copies')).toBe('5');
+		});
+
+		it('sends copies mapped from an expression that resolved to a string', async () => {
+			// `{{ $json.quantity }}` over a CSV or spreadsheet row resolves to "25", not 25.
+			const { ctx, requests } = makeHarness({
+				parameters: parameters({ copies: '25' }),
+				credentials: KEY,
+				responses: [jobResponse('{"jobId":"job-1","status":"dispatched","copies":25}')],
+			});
+			await run.call(ctx, 0);
+
+			expect(requests[0].url.searchParams.get('copies')).toBe('25');
+		});
+
+		it.each([
+			['left at its default of 1', { copies: 1 }],
+			['set to the string "1"', { copies: '1' }],
+			['absent from the parameters', {}],
+		])(
+			'omits copies when %s, so the document’s own quantity applies',
+			async (_label, overrides) => {
+				const { ctx, requests } = makeHarness({
+					parameters: parameters(overrides),
+					credentials: KEY,
+					responses: [jobResponse('{"jobId":"job-1","status":"dispatched","copies":null}')],
+				});
+				await run.call(ctx, 0);
+
+				// Sending copies=1 would override a quantity the document already
+				// carries, so the default must leave the request exactly as it was.
+				expect(requests[0].url.searchParams.has('copies')).toBe(false);
+				expect(requests[0].url.search).toBe(baseSearch);
+			},
+		);
+
+		it.each([0, 10000, 2.5, -1, Number.NaN, 'abc', '', ' ', '2.5', '1e3', '-1', null])(
+			'rejects copies = %o before sending anything',
+			async (copies) => {
+				const { ctx, requests } = makeHarness({
+					parameters: parameters({ copies }),
+					credentials: KEY,
+					responses: [],
+				});
+
+				const error = await run.call(ctx, 0).then(
+					() => undefined,
+					(thrown: unknown) => thrown,
+				);
+				expect(error).toBeInstanceOf(LabelZoomValidationError);
+				expect((error as LabelZoomValidationError).parameter).toBe('copies');
+				expect((error as Error).message).toMatch(/copies must be a whole number from 1 to 9999/i);
+				expect(requests).toHaveLength(0);
+			},
+		);
+
+		it('surfaces the copies the job was accepted with', async () => {
+			const { ctx } = makeHarness({
+				parameters: parameters({ copies: 5 }),
+				credentials: KEY,
+				responses: [jobResponse('{"jobId":"job-1","status":"dispatched","copies":5}')],
+			});
+			const result = await run.call(ctx, 0);
+
+			expect(result.json).toMatchObject({ jobId: 'job-1', printerId: 'printer-1', copies: 5 });
+		});
+
+		it('surfaces a null copies as-is, meaning the document decides', async () => {
+			const { ctx } = makeHarness({
+				parameters: parameters(),
+				credentials: KEY,
+				responses: [jobResponse('{"jobId":"job-1","status":"dispatched","copies":null}')],
+			});
+			const result = await run.call(ctx, 0);
+
+			expect(result.json.copies).toBeNull();
+		});
+	});
+
+	it('sends no query string at all from Print Template when nothing is set', async () => {
+		const { ctx, requests } = makeHarness({
+			parameters: operations[1].parameters({ validate: false }),
+			credentials: KEY,
+			responses: [jobResponse('{"jobId":"job-1","status":"queued"}')],
+		});
+		await printTemplate.call(ctx, 0);
+
+		expect(requests[0].url.search).toBe('');
+	});
+
+	it('sends copies alone from Print Template when validation is off', async () => {
+		const { ctx, requests } = makeHarness({
+			parameters: operations[1].parameters({ validate: false, copies: 3 }),
+			credentials: KEY,
+			responses: [jobResponse('{"jobId":"job-1","status":"queued","copies":3}')],
+		});
+		await printTemplate.call(ctx, 0);
+
+		expect(requests[0].url.search).toBe('?copies=3');
+	});
+
+	it('sends copies alongside sourceFormat and the transform options on Print', async () => {
+		const { ctx, requests } = makeHarness({
+			parameters: operations[0].parameters({ copies: 12, options: { rotation: 90 } }),
+			credentials: KEY,
+			responses: [jobResponse('{"jobId":"job-1","status":"dispatched","copies":12}')],
+		});
+		await print.call(ctx, 0);
+
+		const { searchParams } = requests[0].url;
+		expect(searchParams.get('sourceFormat')).toBe('zpl');
+		expect(searchParams.get('copies')).toBe('12');
+		// Copies is a print-endpoint parameter, not a conversion option.
+		expect(JSON.parse(searchParams.get('params') as string)).toEqual({ rotation: 90 });
 	});
 });
 

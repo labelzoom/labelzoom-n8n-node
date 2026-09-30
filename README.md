@@ -96,10 +96,31 @@ transform option from Convert works here too, even when no format change is need
 once the print agent reports back. Turn on **Wait for Completion** when the workflow needs to
 know the label came out of the printer.
 
+**Copies.** Print and Print Template both take **Copies**: how many times each label in the job
+prints, from 1 to 9999. Leave it at the default of 1 and nothing is sent, so the document's own
+print quantity (a ZPL `^PQ`, for example), if it has one, applies exactly as before. **Any other
+value replaces a print quantity already in the label or template** rather than multiplying it — a
+label carrying `^PQ3` sent with Copies set to 5 prints 5 times, not 15. Each label's copies print
+back to back (A, A, B, B) as a single job, and the job in the output reports the `copies` it was
+accepted with (`null` when the document decided). Map it from the incoming item to print a
+per-order quantity:
+
+```
+{{ $json.quantity }}
+```
+
+A number that arrives as text, such as `"25"` from a CSV or spreadsheet, is accepted. Anything
+that isn't a whole number from 1 to 9999 fails the item before a request is made. With Copies
+set, a document that can't carry a print quantity is rejected with a 422 rather than printed a
+different number of times, and a printer that prints through its Windows driver needs an
+up-to-date LabelZoom Print Agent to apply it.
+
 **Idempotency.** Print carries an `Idempotency-Key`; repeating a key returns the original job
 instead of printing again. It defaults to `{{ $execution.id }}-{{ $itemIndex }}`, which makes a
 retried *step* safe. Set it from an order number to make a whole workflow re-run safe too — a
-duplicate shipping label is a real cost.
+duplicate shipping label is a real cost. A key identifies the whole request, Copies included:
+repeating it with a different document, merge data or Copies is rejected with a 422 instead of
+replaying the original job, so give a deliberate reprint a key of its own.
 
 ## Examples
 
@@ -115,6 +136,11 @@ Variable Data mapped from the rows) → Google Drive. Each row becomes one page.
 **Fill a designed template.** Design in LabelZoom Studio, publish it to Print Templates, then
 Printer → Print Template with the merge fields mapped from the incoming item. The template
 picker shows each template's merge fields, so you can see what data it wants.
+
+**One label per unit.** An order-line trigger (or a spreadsheet of SKUs) → LabelZoom (Printer →
+Print Template, merge fields mapped from the line, **Copies** set to `{{ $json.quantity }}`). A
+line for 12 units prints its label 12 times as one job, whatever quantity the template itself
+was designed with.
 
 ## Development
 

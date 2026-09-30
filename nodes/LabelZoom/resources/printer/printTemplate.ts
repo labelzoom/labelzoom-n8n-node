@@ -3,7 +3,13 @@ import { NodeOperationError } from 'n8n-workflow';
 
 import { labelZoomJsonRequest } from '../../shared/transport';
 import { resourceId } from '../../shared/utils';
-import { idempotencyKeyField, printerLocator, templateLocator } from './shared';
+import {
+	copiesField,
+	idempotencyKeyField,
+	printerLocator,
+	readCopies,
+	templateLocator,
+} from './shared';
 
 const showFor = { resource: ['printer'], operation: ['printTemplate'] };
 
@@ -29,6 +35,7 @@ export const printTemplateDescription: INodeProperties[] = [
 			'Whether to reject the job when a required merge field is missing, instead of printing a label with a blank in it',
 		displayOptions: { show: showFor },
 	},
+	copiesField(showFor),
 	idempotencyKeyField(showFor),
 ];
 
@@ -38,6 +45,7 @@ export async function printTemplate(
 ): Promise<INodeExecutionData> {
 	const printerId = resourceId.call(this, 'printerId', itemIndex);
 	const templateId = resourceId.call(this, 'templateId', itemIndex);
+	const copies = readCopies.call(this, itemIndex);
 	const validate = this.getNodeParameter('validate', itemIndex, true) as boolean;
 	const idempotencyKey = this.getNodeParameter('idempotencyKey', itemIndex, '') as string;
 	const rawMergeData = this.getNodeParameter('mergeData', itemIndex, '{}');
@@ -73,6 +81,12 @@ export async function printTemplate(
 		);
 	}
 
+	// Copies at its default of 1 is left off so the template's own quantity, if it
+	// has one, still applies.
+	const query: Record<string, string> = {};
+	if (validate) query.validate = 'true';
+	if (copies !== 1) query.copies = String(copies);
+
 	const headers: Record<string, string> = {};
 	if (idempotencyKey !== '') headers['Idempotency-Key'] = idempotencyKey;
 
@@ -81,7 +95,7 @@ export async function printTemplate(
 		'POST',
 		`/api/v3/printers/${encodeURIComponent(printerId)}/templates/${encodeURIComponent(templateId)}/print`,
 		mergeData as JsonObject,
-		validate ? { validate: 'true' } : undefined,
+		Object.keys(query).length > 0 ? query : undefined,
 		headers,
 	);
 

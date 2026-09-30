@@ -1,4 +1,6 @@
-import type { INodeProperties } from 'n8n-workflow';
+import type { IExecuteFunctions, INodeProperties } from 'n8n-workflow';
+
+import { LabelZoomValidationError } from '../../shared/validation';
 
 type ShowFor = { resource: string[]; operation: string[] };
 
@@ -79,6 +81,66 @@ export function idempotencyKeyField(showFor: ShowFor): INodeProperties {
 			'Repeating a key returns the original job instead of printing again. Set it from a stable business value (an order number) to make a whole workflow re-run safe.',
 		displayOptions: { show: showFor },
 	};
+}
+
+/** The API accepts `copies` from 1 to this, inclusive. */
+export const MAX_COPIES = 9999;
+
+/**
+ * How many times each label in the job prints.
+ *
+ * A value replaces any quantity the document or template already carries — it is
+ * not multiplied by it. That is why 1 is never sent: leaving the parameter off is
+ * the only way to let the document's own quantity apply, and a workflow that never
+ * touches this field must print exactly what it printed before the field existed.
+ */
+export function copiesField(showFor: ShowFor): INodeProperties {
+	return {
+		displayName: 'Copies',
+		name: 'copies',
+		type: 'number',
+		typeOptions: { minValue: 1, maxValue: MAX_COPIES, numberPrecision: 0 },
+		default: 1,
+		description:
+			"How many times to print each label, from 1 to 9999. A value other than 1 replaces any quantity already set in the document or template. Leave it at 1 to use the document's own quantity.",
+		displayOptions: { show: showFor },
+	};
+}
+
+/**
+ * Read and validate Copies before anything is sent.
+ *
+ * The field is usually mapped from the incoming item (`{{ $json.quantity }}`), and
+ * an expression can resolve to a string — a quantity read from CSV or a
+ * spreadsheet arrives as `"25"`, not 25 — so a string of digits is accepted. What
+ * is rejected mirrors the API's own rule (decimal digits, 1 to 9999), so a value
+ * the server would 400 on costs no request.
+ */
+export function readCopies(this: IExecuteFunctions, itemIndex: number): number {
+	const raw: unknown = this.getNodeParameter('copies', itemIndex, 1);
+
+	let copies = Number.NaN;
+	if (typeof raw === 'number') {
+		copies = raw;
+	} else if (typeof raw === 'string' && /^\d+$/.test(raw.trim())) {
+		copies = Number(raw.trim());
+	}
+
+	if (!Number.isInteger(copies) || copies < 1 || copies > MAX_COPIES) {
+		const received = typeof raw === 'number' ? String(raw) : JSON.stringify(raw);
+		throw new LabelZoomValidationError(
+			this.getNode(),
+			'copies',
+			`Copies must be a whole number from 1 to ${MAX_COPIES}, got ${received}`,
+			{
+				itemIndex,
+				description:
+					"Set Copies to how many times each label should print, or leave it at 1 to use the document's own quantity.",
+			},
+		);
+	}
+
+	return copies;
 }
 
 /** Statuses a job can reach; only `completed` means the label actually printed. */
