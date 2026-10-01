@@ -63,8 +63,8 @@ export function templateLocator(showFor: ShowFor): INodeProperties {
 }
 
 /**
- * Making a print safe to retry. The API treats a repeated Idempotency-Key as a
- * request for the original job rather than a second print, which is what you want
+ * Making a print safe to retry. The API treats a repeated Idempotency-Key (with the
+ * same request) as a request for the original job rather than a second print, which is what you want
  * when n8n retries a step — a duplicate shipping label is a real cost.
  *
  * The default keys on execution id + item index, so a retried execution reprints
@@ -78,7 +78,7 @@ export function idempotencyKeyField(showFor: ShowFor): INodeProperties {
 		type: 'string',
 		default: '={{ $execution.id }}-{{ $itemIndex }}',
 		description:
-			'Repeating a key returns the original job instead of printing again. Set it from a stable business value (an order number) to make a whole workflow re-run safe.',
+			'Repeating a key with the same request returns the original job instead of printing again; reusing it for a different document, merge data or Copies is rejected. Set it from a stable business value (an order number) to make a whole workflow re-run safe.',
 		displayOptions: { show: showFor },
 	};
 }

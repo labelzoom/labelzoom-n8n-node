@@ -69,7 +69,7 @@ inline raw bytes (EPL's `GW`, IPL's `STX`/`ETX` framing, TSPL's `BITMAP`, DPL's 
 SBPL's `ESC`-prefixed commands), and decoding them to a string would corrupt any label carrying
 graphics.
 
-Options cover the full parameter set — DPI, rotation, scaling, colour mode, darkness, label
+Options cover the full parameter set — DPI, rotation, scaling, color mode, darkness, label
 size in inches, position, PDF conversion mode and page number, ZPL image compression and
 commands to ignore, and a **Variable Data** field that fills placeholders on the label (one
 output label per array entry). Anything not yet surfaced in the UI can go through **Custom
