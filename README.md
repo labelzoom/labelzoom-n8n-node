@@ -96,24 +96,24 @@ transform option from Convert works here too, even when no format change is need
 once the print agent reports back. Turn on **Wait for Completion** when the workflow needs to
 know the label came out of the printer.
 
-**Copies.** Print and Print Template both take **Copies**: how many times each label in the job
-prints, from 1 to 9999. Leave it at the default of 1 and nothing is sent, so the document's own
-print quantity (a ZPL `^PQ`, for example), if it has one, applies exactly as before. **Any other
-value replaces a print quantity already in the label or template** rather than multiplying it — a
-label carrying `^PQ3` sent with Copies set to 5 prints 5 times, not 15. Each label's copies print
-back to back (A, A, B, B) as a single job, and the job in the output reports the `copies` it was
-accepted with (`null` when the document decided). Map it from the incoming item to print a
-per-order quantity:
+**Copies.** Print and Print Template both take **Copies**: how many times the job is sent to the
+printer, from 1 to 9999, for any document in any printer language. **A print quantity already in
+the label or template multiplies** — a label carrying `^PQ3` sent with Copies set to 5 prints 15.
+A document holding several labels prints collated (A, B, A, B), all as a single job, and the job in
+the output reports the `copies` it was accepted with (`null` when Copies was left at 1). Leave
+Copies at the default of 1 and nothing is sent: the document prints once, as sent, exactly as
+before. Map it from the incoming item to print a per-order quantity:
 
 ```
 {{ $json.quantity }}
 ```
 
 A number that arrives as text, such as `"25"` from a CSV or spreadsheet, is accepted. Anything
-that isn't a whole number from 1 to 9999 fails the item before a request is made. With Copies
-set, a document that can't carry a print quantity is rejected with a 422 rather than printed a
-different number of times, and a printer that prints through its Windows driver needs an
-up-to-date LabelZoom Print Agent to apply it.
+that isn't a whole number from 1 to 9999 fails the item before a request is made. Copies above 1
+needs an up-to-date LabelZoom Print Agent: if the agent serving the printer is out of date, the
+job is rejected with a 422 asking you to update it, rather than printed a different number of
+times. For a large run of a complex label, the printer language's own quantity command inside the
+label (`^PQ` in ZPL, for example) prints faster than sending the whole job again and again.
 
 **Idempotency.** Print carries an `Idempotency-Key`; repeating a key returns the original job
 instead of printing again. It defaults to `{{ $execution.id }}-{{ $itemIndex }}`, which makes a
@@ -139,8 +139,8 @@ picker shows each template's merge fields, so you can see what data it wants.
 
 **One label per unit.** An order-line trigger (or a spreadsheet of SKUs) → LabelZoom (Printer →
 Print Template, merge fields mapped from the line, **Copies** set to `{{ $json.quantity }}`). A
-line for 12 units prints its label 12 times as one job, whatever quantity the template itself
-was designed with.
+line for 12 units sends its label to the printer 12 times as one job. Design the template to
+print a single label: a quantity built into the template multiplies with Copies.
 
 ## Development
 

@@ -87,12 +87,13 @@ export function idempotencyKeyField(showFor: ShowFor): INodeProperties {
 export const MAX_COPIES = 9999;
 
 /**
- * How many times each label in the job prints.
+ * How many times the job is sent to the printer.
  *
- * A value replaces any quantity the document or template already carries — it is
- * not multiplied by it. That is why 1 is never sent: leaving the parameter off is
- * the only way to let the document's own quantity apply, and a workflow that never
- * touches this field must print exactly what it printed before the field existed.
+ * Any quantity the document or template already carries multiplies with it, and a
+ * document holding several labels prints collated (A, B, A, B). 1 is never sent:
+ * the API treats it exactly like leaving the parameter off, and leaving it off
+ * keeps a workflow that never touches this field sending the very request it sent
+ * before the field existed.
  */
 export function copiesField(showFor: ShowFor): INodeProperties {
 	return {
@@ -102,7 +103,7 @@ export function copiesField(showFor: ShowFor): INodeProperties {
 		typeOptions: { minValue: 1, maxValue: MAX_COPIES, numberPrecision: 0 },
 		default: 1,
 		description:
-			"How many times to print each label, from 1 to 9999. A value other than 1 replaces any quantity already set in the document or template. Leave it at 1 to use the document's own quantity.",
+			"How many times to send the job to the printer, from 1 to 9999. A quantity already set in the document or template multiplies: a label carrying ^PQ3 with Copies set to 5 prints 15. Leave it at 1 to print it once, as sent.",
 		displayOptions: { show: showFor },
 	};
 }
@@ -135,7 +136,7 @@ export function readCopies(this: IExecuteFunctions, itemIndex: number): number {
 			{
 				itemIndex,
 				description:
-					"Set Copies to how many times each label should print, or leave it at 1 to use the document's own quantity.",
+					"Set Copies to how many times the job should be sent to the printer, or leave it at 1 to print it once, as sent.",
 			},
 		);
 	}

@@ -81,8 +81,8 @@ export async function printTemplate(
 		);
 	}
 
-	// Copies at its default of 1 is left off so the template's own quantity, if it
-	// has one, still applies.
+	// Copies at its default of 1 is left off: the API treats copies=1 exactly like
+	// no parameter, and the request stays what it was before the field existed.
 	const query: Record<string, string> = {};
 	if (validate) query.validate = 'true';
 	if (copies !== 1) query.copies = String(copies);

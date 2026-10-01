@@ -283,7 +283,7 @@ describe('printer: copies', () => {
 			['set to the string "1"', { copies: '1' }],
 			['absent from the parameters', {}],
 		])(
-			'omits copies when %s, so the document’s own quantity applies',
+			'omits copies when %s, leaving the request as it was before Copies existed',
 			async (_label, overrides) => {
 				const { ctx, requests } = makeHarness({
 					parameters: parameters(overrides),
@@ -292,8 +292,8 @@ describe('printer: copies', () => {
 				});
 				await run.call(ctx, 0);
 
-				// Sending copies=1 would override a quantity the document already
-				// carries, so the default must leave the request exactly as it was.
+				// The API treats copies=1 exactly like no parameter, so the default
+				// must leave the request exactly as it was.
 				expect(requests[0].url.searchParams.has('copies')).toBe(false);
 				expect(requests[0].url.search).toBe(baseSearch);
 			},
@@ -330,7 +330,7 @@ describe('printer: copies', () => {
 			expect(result.json).toMatchObject({ jobId: 'job-1', printerId: 'printer-1', copies: 5 });
 		});
 
-		it('surfaces a null copies as-is, meaning the document decides', async () => {
+		it('surfaces a null copies as-is, meaning Copies was not sent', async () => {
 			const { ctx } = makeHarness({
 				parameters: parameters(),
 				credentials: KEY,

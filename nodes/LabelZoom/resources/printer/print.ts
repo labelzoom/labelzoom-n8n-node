@@ -127,8 +127,9 @@ export async function print(
 	// `sourceFormat` and `copies` are the query parameters the print endpoint
 	// consumes itself; everything in `params` is forwarded verbatim to the
 	// conversion step, which is why rotation and DPI work here even when no format
-	// change happens. Copies at its default of 1 is left off so the document's own
-	// quantity still applies.
+	// change happens. Copies at its default of 1 is left off: the API treats
+	// copies=1 exactly like no parameter, and the request stays what it was before
+	// the field existed.
 	const query: Record<string, string> = {};
 	if (sourceFormat !== '') query.sourceFormat = sourceFormat;
 	if (copies !== 1) query.copies = String(copies);
