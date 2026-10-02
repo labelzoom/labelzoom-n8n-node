@@ -94,7 +94,7 @@
     "retry/403-is-not-retried",
     "retry/429-then-200",
     "retry/500-then-200",
-    "retry/503-retry-after-is-honoured",
+    "retry/503-retry-after-is-honored",
     "retry/backoff-doubles",
     "retry/disabled-when-max-retries-zero",
     "retry/exhausts-and-raises-last-error",

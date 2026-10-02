@@ -111,7 +111,7 @@ function retryDelayMs(attempt: number, retryAfterHeader: unknown): number {
 	const base = 2 ** attempt * 1000;
 	const jittered = Math.random() * base;
 	const retryAfterSeconds = Number(retryAfterHeader);
-	// Honour Retry-After when it asks for longer than our own backoff. The gateway
+	// Honor Retry-After when it asks for longer than our own backoff. The gateway
 	// sends `Retry-After: 60` on a rate limit; ignoring it just burns the budget.
 	if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds * 1000 > jittered) {
 		return retryAfterSeconds * 1000;
