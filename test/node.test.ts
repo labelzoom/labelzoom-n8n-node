@@ -1,5 +1,5 @@
 /**
- * Coverage for the behaviour that is specific to this node — the print surface,
+ * Coverage for the behavior that is specific to this node — the print surface,
  * the dropdowns, and the binary-safety rules. The shared wire contract is
  * asserted separately by conformance.test.ts.
  */
@@ -509,7 +509,7 @@ describe('print input modes', () => {
 
 	it('sends base64 input as text/plain, not the source format’s media type', async () => {
 		// The Print operation offers the same "Base64 Text" mode as Convert. Sending
-		// a base64 string labelled application/pdf produces a 502 on the way to the
+		// a base64 string labeled application/pdf produces a 502 on the way to the
 		// printer, or garbage at the printer itself.
 		const { ctx, requests } = makeHarness({
 			parameters: { ...base, sourceFormat: 'pdf', inputType: 'base64', labelContent: 'JVBERi0xLjQK' },
