@@ -13,7 +13,13 @@ import type { ConversionOptions } from '../../shared/options';
 import { serializeConversionParams } from '../../shared/options';
 import { labelZoomJsonRequest, labelZoomRequest, requestIdOf } from '../../shared/transport';
 import { readDocument, resourceId } from '../../shared/utils';
-import { TERMINAL_JOB_STATUSES, idempotencyKeyField, printerLocator } from './shared';
+import {
+	TERMINAL_JOB_STATUSES,
+	copiesField,
+	idempotencyKeyField,
+	printerLocator,
+	readCopies,
+} from './shared';
 
 const showFor = { resource: ['printer'], operation: ['print'] };
 
@@ -44,6 +50,7 @@ export const printDescription: INodeProperties[] = [
 		displayOptions: { show: showFor },
 	},
 	...documentInputFields(showFor),
+	copiesField(showFor),
 	idempotencyKeyField(showFor),
 	{
 		displayName: 'Wait for Completion',
@@ -104,6 +111,7 @@ export async function print(
 	itemIndex: number,
 ): Promise<INodeExecutionData> {
 	const printerId = resourceId.call(this, 'printerId', itemIndex);
+	const copies = readCopies.call(this, itemIndex);
 	const sourceFormat = this.getNodeParameter('sourceFormat', itemIndex, '') as string;
 	const idempotencyKey = this.getNodeParameter('idempotencyKey', itemIndex, '') as string;
 	const waitForCompletion = this.getNodeParameter('waitForCompletion', itemIndex, false) as boolean;
@@ -116,11 +124,15 @@ export async function print(
 	// label a base64 string as application/pdf and the printer would get garbage.
 	const inputType = this.getNodeParameter('inputType', itemIndex) as string;
 
-	// `sourceFormat` is the one query parameter the print endpoint consumes itself;
-	// everything else is forwarded verbatim to the conversion step, which is why
-	// rotation and DPI work here even when no format change happens.
+	// `sourceFormat` and `copies` are the query parameters the print endpoint
+	// consumes itself; everything in `params` is forwarded verbatim to the
+	// conversion step, which is why rotation and DPI work here even when no format
+	// change happens. Copies at its default of 1 is left off: the API treats
+	// copies=1 exactly like no parameter, and the request stays what it was before
+	// the field existed.
 	const query: Record<string, string> = {};
 	if (sourceFormat !== '') query.sourceFormat = sourceFormat;
+	if (copies !== 1) query.copies = String(copies);
 
 	const headers: Record<string, string> = {};
 	if (idempotencyKey !== '') headers['Idempotency-Key'] = idempotencyKey;

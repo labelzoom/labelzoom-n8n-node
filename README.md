@@ -69,7 +69,7 @@ inline raw bytes (EPL's `GW`, IPL's `STX`/`ETX` framing, TSPL's `BITMAP`, DPL's 
 SBPL's `ESC`-prefixed commands), and decoding them to a string would corrupt any label carrying
 graphics.
 
-Options cover the full parameter set — DPI, rotation, scaling, colour mode, darkness, label
+Options cover the full parameter set — DPI, rotation, scaling, color mode, darkness, label
 size in inches, position, PDF conversion mode and page number, ZPL image compression and
 commands to ignore, and a **Variable Data** field that fills placeholders on the label (one
 output label per array entry). Anything not yet surfaced in the UI can go through **Custom
@@ -96,10 +96,31 @@ transform option from Convert works here too, even when no format change is need
 once the print agent reports back. Turn on **Wait for Completion** when the workflow needs to
 know the label came out of the printer.
 
+**Copies.** Print and Print Template both take **Copies**: how many times the job is sent to the
+printer, from 1 to 9999, for any document in any printer language. **A print quantity already in
+the label or template multiplies** — a label carrying `^PQ3` sent with Copies set to 5 prints 15.
+A document holding several labels prints collated (A, B, A, B), all as a single job, and the job in
+the output reports the `copies` it was accepted with (`null` when Copies was left at 1). Leave
+Copies at the default of 1 and nothing is sent: the document prints once, as sent, exactly as
+before. Map it from the incoming item to print a per-order quantity:
+
+```
+{{ $json.quantity }}
+```
+
+A number that arrives as text, such as `"25"` from a CSV or spreadsheet, is accepted. Anything
+that isn't a whole number from 1 to 9999 fails the item before a request is made. Copies above 1
+needs an up-to-date LabelZoom Print Agent: if the agent serving the printer is out of date, the
+job is rejected with a 422 asking you to update it, rather than printed a different number of
+times. For a large run of a complex label, the printer language's own quantity command inside the
+label (`^PQ` in ZPL, for example) prints faster than sending the whole job again and again.
+
 **Idempotency.** Print carries an `Idempotency-Key`; repeating a key returns the original job
 instead of printing again. It defaults to `{{ $execution.id }}-{{ $itemIndex }}`, which makes a
 retried *step* safe. Set it from an order number to make a whole workflow re-run safe too — a
-duplicate shipping label is a real cost.
+duplicate shipping label is a real cost. A key identifies the whole request, Copies included:
+repeating it with a different document, merge data or Copies is rejected with a 422 instead of
+replaying the original job, so give a deliberate reprint a key of its own.
 
 ## Examples
 
@@ -115,6 +136,11 @@ Variable Data mapped from the rows) → Google Drive. Each row becomes one page.
 **Fill a designed template.** Design in LabelZoom Studio, publish it to Print Templates, then
 Printer → Print Template with the merge fields mapped from the incoming item. The template
 picker shows each template's merge fields, so you can see what data it wants.
+
+**One label per unit.** An order-line trigger (or a spreadsheet of SKUs) → LabelZoom (Printer →
+Print Template, merge fields mapped from the line, **Copies** set to `{{ $json.quantity }}`). A
+line for 12 units sends its label to the printer 12 times as one job. Design the template to
+print a single label: a quantity built into the template multiplies with Copies.
 
 ## Development
 
