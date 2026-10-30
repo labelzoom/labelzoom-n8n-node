@@ -29,7 +29,7 @@ const REPO = 'https://github.com/labelzoom/labelzoom-sdk.git';
  * A tag or a full commit SHA. Prefer a release tag; pin a SHA only when the spec
  * has moved ahead of the latest SDK release.
  */
-const REF = 'node/v1.1.0';
+const REF = 'ed868afb301b1ebf5b497e76ded2871e944ba66c';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const destination = join(root, 'test', 'conformance');

@@ -1,6 +1,6 @@
 {
-  "id": "retry/503-retry-after-is-honoured",
-  "note": "F2: Retry-After is honoured on ANY retryable status, not just 429. RFC 9110 allows it on 503, and a 503 asking for 5s must not be retried after the 1s backoff. Reading it off the typed 429 error instead of the response silently passes every 429-only fixture.",
+  "id": "retry/503-retry-after-is-honored",
+  "note": "F2: Retry-After is honored on ANY retryable status, not just 429. RFC 9110 allows it on 503, and a 503 asking for 5s must not be retried after the 1s backoff. Reading it off the typed 429 error instead of the response silently passes every 429-only fixture.",
   "given": {
     "maxRetries": 2,
     "responses": [
