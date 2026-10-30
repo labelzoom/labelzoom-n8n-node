@@ -17,7 +17,7 @@ export const labelDescription: INodeProperties[] = [
 			{
 				name: 'Convert',
 				value: 'convert',
-				description: 'Convert a label between ZPL, EPL, TSPL, DPL, PDF, images and XML/JSON',
+				description: 'Convert a label between ZPL, EPL, IPL, TSPL, DPL, SBPL, PDF, images and XML/JSON',
 				action: 'Convert a label',
 			},
 			{

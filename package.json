@@ -1,7 +1,7 @@
 {
 	"name": "n8n-nodes-labelzoom",
-	"version": "1.2.0",
-	"description": "n8n community node for LabelZoom \u2014 convert barcode labels between ZPL, EPL, TSPL, DPL, PDF and images, and print them to cloud-connected thermal printers",
+	"version": "1.2.1",
+	"description": "n8n community node for LabelZoom \u2014 convert barcode labels between ZPL, EPL, IPL, TSPL, DPL, SBPL, PDF and images, and print them to cloud-connected thermal printers",
 	"license": "MIT",
 	"homepage": "https://www.labelzoom.com",
 	"keywords": [
@@ -57,10 +57,10 @@
 		]
 	},
 	"devDependencies": {
-		"@n8n/node-cli": "^0.50.2",
+		"@n8n/node-cli": "^0.52.1",
 		"@types/node": "^22.15.0",
 		"eslint": "9.39.4",
-		"prettier": "3.9.9",
+		"prettier": "3.9.10",
 		"typescript": "6.0.3",
 		"vitest": "^5.0.0"
 	},
