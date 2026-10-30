@@ -27,7 +27,7 @@ export function documentInputFields(showFor: {
 				{
 					name: 'Text',
 					value: 'text',
-					description: 'Type or map label code directly (ZPL, EPL, TSPL, DPL, XML, JSON)',
+					description: 'Type or map label code directly (ZPL, EPL, IPL, TSPL, DPL, SBPL, XML, JSON)',
 				},
 				{
 					name: 'Base64 Text',
