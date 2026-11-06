@@ -36,6 +36,22 @@ updates:
       # supports TypeScript 7.
       - dependency-name: typescript
         update-types: ['version-update:semver-major']
+      # ESLint is held at 9.x for the same reason: n8n's lint toolchain doesn't
+      # run on ESLint 10 yet. `n8n-node lint` uses the hoisted `eslint`, and on
+      # 10.14.0 it dies on the first file:
+      #
+      #   TypeError: context.getFilename is not a function
+      #   Rule: "n8n-nodes-base/community-package-json-author-email-still-default"
+      #
+      # ESLint 10 removed the deprecated `context.getFilename()`, which
+      # eslint-plugin-n8n-nodes-base 1.x still calls. The peer ranges say the same:
+      # @n8n/eslint-plugin-community-nodes (latest 0.39.0) peers on eslint
+      # "9.29.0" exactly, and @n8n/node-cli itself depends on eslint 9.29.0.
+      #
+      # Drop this ignore once @n8n/node-cli and @n8n/eslint-plugin-community-nodes
+      # accept ESLint 10.
+      - dependency-name: eslint
+        update-types: ['version-update:semver-major']
     groups:
       npm-minor-patch:
         update-types: [minor, patch]
