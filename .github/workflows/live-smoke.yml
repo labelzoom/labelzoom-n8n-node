@@ -1,8 +1,8 @@
 name: Live smoke
 
 # A daily check that the real API still behaves the way the offline fixtures
-# assume. Runs anonymously on purpose — no secrets, so it cannot leak one, and
-# the free tier is exactly what a new user hits first.
+# assume. Authenticates with an API key, the way the node's users do. The
+# free tier is watched by the SDK's live tests, so it isn't repeated here.
 #
 # Deliberately not triggered by pull_request: a fork PR must never be able to
 # spend the project's rate-limit budget.
@@ -24,11 +24,30 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      # Without the key the request still succeeds anonymously, so a missing or
+      # renamed secret would go unnoticed; fail instead. Scoped to this repo so a
+      # fork's manual run is not forced to supply one.
+      - name: Require the API key
+        if: github.repository == 'labelzoom/labelzoom-n8n-node'
+        env:
+          LABELZOOM_API_KEY: ${{ secrets.LABELZOOM_API_KEY }}
+        run: |
+          if [ -z "$LABELZOOM_API_KEY" ]; then
+            echo "::error::LABELZOOM_API_KEY secret is not set"
+            exit 1
+          fi
       - name: Convert ZPL to PDF against the live API
+        env:
+          LABELZOOM_API_KEY: ${{ secrets.LABELZOOM_API_KEY }}
         run: |
           set -euo pipefail
+          auth=()
+          if [ -n "${LABELZOOM_API_KEY:-}" ]; then
+            auth=(-H "Authorization: Bearer ${LABELZOOM_API_KEY}")
+          fi
           status=$(curl -sS -o label.pdf -w '%{http_code}' \
             -X POST 'https://api.labelzoom.com/api/v2/convert/zpl/to/pdf' \
+            "${auth[@]}" \
             -H 'Accept: */*' \
             -H 'Content-Type: text/plain' \
             --data-binary '^XA^FO50,50^ADN,36,20^FDLabelZoom^FS^XZ')
