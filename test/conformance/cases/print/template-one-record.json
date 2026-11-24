@@ -1,0 +1,66 @@
+{
+  "id": "print/template-one-record",
+  "note": "P3: one record is sent as a JSON object, not a one-element array. The result is a batch either way, so callers handle one shape.",
+  "given": {
+    "client": {
+      "apiKey": "lz_test_print_key"
+    },
+    "operation": "printTemplate",
+    "printerId": "5b0e3c1a-8f2d-4c6e-9a7b-1d2e3f4a5b6c",
+    "templateId": "7c8a0f8e-1111-4222-8333-444455556666",
+    "data": [
+      {
+        "orderNumber": "SO-1001",
+        "sku": "A-100"
+      }
+    ],
+    "responses": [
+      {
+        "status": 202,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "bodyText": "{\"jobId\":\"9f1c7e2a-4b30-4d6e-8a11-5c2f9d4e7b83\",\"status\":\"dispatched\",\"copies\":null}"
+      }
+    ]
+  },
+  "expect": {
+    "request": {
+      "method": "POST",
+      "path": "/api/v3/printers/5b0e3c1a-8f2d-4c6e-9a7b-1d2e3f4a5b6c/templates/7c8a0f8e-1111-4222-8333-444455556666/print",
+      "headers": {
+        "content-type": "application/json",
+        "accept": "application/json",
+        "authorization": "Bearer lz_test_print_key"
+      },
+      "headersMatch": {
+        "user-agent": "^labelzoom-[a-z0-9]+-sdk/",
+        "idempotency-key": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+      },
+      "queryAbsent": [
+        "copies",
+        "validate",
+        "sourceFormat",
+        "params"
+      ],
+      "bodyJson": {
+        "orderNumber": "SO-1001",
+        "sku": "A-100"
+      }
+    },
+    "result": {
+      "printBatch": {
+        "jobs": [
+          {
+            "jobId": "9f1c7e2a-4b30-4d6e-8a11-5c2f9d4e7b83",
+            "status": "dispatched",
+            "copies": null,
+            "idempotent": false
+          }
+        ],
+        "remaining": 0,
+        "message": null
+      }
+    }
+  }
+}

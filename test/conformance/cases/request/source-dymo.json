@@ -1,0 +1,30 @@
+{
+  "id": "request/source-dymo",
+  "note": "B1: dymo (a DYMO Connect .dymo or DYMO Label .label file) is XML and sends Content-Type application/xml",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "dymo",
+    "target": "zpl",
+    "bodyText": "<DieCutLabel Version=\"8.0\"/>"
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/dymo/to/zpl",
+    "headers": {
+      "content-type": "application/xml",
+      "accept": "*/*"
+    },
+    "headersAbsent": [
+      "authorization"
+    ],
+    "headersMatch": {
+      "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+    },
+    "bodyText": "<DieCutLabel Version=\"8.0\"/>",
+    "queryAbsent": [
+      "params"
+    ]
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "id": "print/template-partial-batch",
+  "note": "P6: a batch the server could not finish in one request reports how many entries at the end were not submitted. Resending with the same key submits them.",
+  "given": {
+    "client": {
+      "apiKey": "lz_test_print_key"
+    },
+    "operation": "printTemplate",
+    "printerId": "5b0e3c1a-8f2d-4c6e-9a7b-1d2e3f4a5b6c",
+    "templateId": "7c8a0f8e-1111-4222-8333-444455556666",
+    "data": [
+      {
+        "orderNumber": "SO-1001",
+        "sku": "A-100"
+      },
+      {
+        "orderNumber": "SO-1002",
+        "sku": "B-200"
+      },
+      {
+        "orderNumber": "SO-1003",
+        "sku": "C-300"
+      }
+    ],
+    "idempotencyKey": "SO-BATCH-8",
+    "responses": [
+      {
+        "status": 202,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "bodyText": "{\"jobs\":[{\"jobId\":\"9f1c7e2a-4b30-4d6e-8a11-5c2f9d4e7b83\",\"status\":\"dispatched\",\"copies\":null}],\"remaining\":2,\"message\":\"Time budget exhausted after 1 of 3 labels; resubmit the remaining 2.\"}"
+      }
+    ]
+  },
+  "expect": {
+    "result": {
+      "printBatch": {
+        "jobs": [
+          {
+            "jobId": "9f1c7e2a-4b30-4d6e-8a11-5c2f9d4e7b83",
+            "status": "dispatched",
+            "copies": null,
+            "idempotent": false
+          }
+        ],
+        "remaining": 2,
+        "message": "Time budget exhausted after 1 of 3 labels; resubmit the remaining 2."
+      }
+    }
+  }
+}

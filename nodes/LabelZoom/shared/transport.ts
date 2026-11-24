@@ -43,6 +43,12 @@ export interface LabelZoomRequest {
 	contentType?: string;
 	headers?: Record<string, string>;
 	/**
+	 * The `Accept` header. Convert calls leave it unset and send rule B2's
+	 * wildcard; every print and management call sends `application/json`, because
+	 * every success response there is JSON (rule P1).
+	 */
+	accept?: string;
+	/**
 	 * Fail loudly when no credential is configured, instead of falling back to an
 	 * anonymous request.
 	 *
@@ -187,6 +193,22 @@ function extractMessage(response: LabelZoomResponse): string {
 	return `LabelZoom request failed with status ${response.statusCode}`;
 }
 
+/**
+ * Rule E3: the machine-readable `code` of a problem+json body, such as
+ * `daily_job_limit_reached` or `idempotency_key_reused`. Null when the body has
+ * none: older error bodies, and every error from outside the API.
+ */
+function errorCodeOf(body: JsonObject | undefined): string | null {
+	return typeof body?.code === 'string' && body.code !== '' ? body.code : null;
+}
+
+/** The daily print job limit. Rule F5: never retried, whatever Retry-After says. */
+export const DAILY_JOB_LIMIT_CODE = 'daily_job_limit_reached';
+
+function isDailyJobLimit(response: LabelZoomResponse): boolean {
+	return response.statusCode === 429 && errorCodeOf(parsedBody(response)) === DAILY_JOB_LIMIT_CODE;
+}
+
 function parsedBody(response: LabelZoomResponse): JsonObject | undefined {
 	try {
 		return JSON.parse(decodeText(response)) as JsonObject;
@@ -221,10 +243,18 @@ export function toNodeApiError(node: INode, response: LabelZoomResponse): NodeAp
 	if (Array.isArray(body?.problems)) {
 		hints.push(`Missing merge fields: ${JSON.stringify(body.problems)}`);
 	}
+	const code = errorCodeOf(body);
 	const retryAfterSeconds = retryAfterSecondsOf(response);
-	if (response.statusCode === 429 && retryAfterSeconds !== undefined) {
+	if (response.statusCode === 429 && code === DAILY_JOB_LIMIT_CODE) {
+		hints.push(
+			retryAfterSeconds !== undefined
+				? `The daily print job limit is reached — retry after ${retryAfterSeconds} seconds, when it resets.`
+				: 'The daily print job limit is reached. It resets at midnight UTC.',
+		);
+	} else if (response.statusCode === 429 && retryAfterSeconds !== undefined) {
 		hints.push(`Rate limited — retry after ${retryAfterSeconds} seconds.`);
 	}
+	if (code !== null) hints.push(`Error code: ${code}.`);
 	if (requestId !== undefined) {
 		hints.push(`LabelZoom request ID: ${requestId} (quote this to support).`);
 	}
@@ -232,7 +262,7 @@ export function toNodeApiError(node: INode, response: LabelZoomResponse): NodeAp
 	// The status goes last so it always wins: NodeApiError infers httpCode from
 	// this object, and a body without a `status` field (an empty 406, an HTML 502)
 	// would otherwise leave the error with no status code at all.
-	return new NodeApiError(
+	const error = new NodeApiError(
 		node,
 		{ ...(body ?? {}), message, status: response.statusCode } as JsonObject,
 		{
@@ -241,6 +271,9 @@ export function toNodeApiError(node: INode, response: LabelZoomResponse): NodeAp
 			description: hints.length > 0 ? hints.join(' ') : undefined,
 		},
 	);
+	// Kept where code can branch on it as well as in the description a person reads.
+	error.context.code = code;
+	return error;
 }
 
 /**
@@ -272,7 +305,7 @@ export async function labelZoomRequest(
 		// Rule B2: ALWAYS `*/*`, never the target's media type and never a q-value.
 		// The backend's Spring `produces` list omits image/gif, image/bmp and
 		// image/jpeg, so an exact Accept header 406s before the handler runs.
-		Accept: '*/*',
+		Accept: request.accept ?? '*/*',
 		// Rule B4: must not begin `LabelZoomStudio/` — the server parses that
 		// prefix and silently forces pdf.conversionMode = NATIVE.
 		'User-Agent': 'labelzoom-n8n-node (n8n)',
@@ -333,7 +366,13 @@ export async function labelZoomRequest(
 		// Never retry an auth failure. Repeated authentication failures are rate
 		// limited by source IP, so hammering a bad credential does not just fail
 		// this workflow — it can lock out every other workflow on the same host.
-		if (!isRetryableStatus(lastResponse.statusCode) || attempt === maxRetries) {
+		// Rule F5: the daily print limit resets at midnight UTC, so a retry inside
+		// this call can only fail again and spend the retry budget doing it.
+		if (
+			!isRetryableStatus(lastResponse.statusCode) ||
+			isDailyJobLimit(lastResponse) ||
+			attempt === maxRetries
+		) {
 			throw toNodeApiError(this.getNode(), lastResponse);
 		}
 
@@ -358,6 +397,7 @@ export async function labelZoomJsonRequest(
 		path,
 		query,
 		headers,
+		accept: 'application/json',
 		// Every JSON endpoint this wrapper serves — printers, jobs, templates — is
 		// account-scoped, so none of them has an anonymous mode.
 		requireAuth: true,

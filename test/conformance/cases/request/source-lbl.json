@@ -1,0 +1,30 @@
+{
+  "id": "request/source-lbl",
+  "note": "B1: lbl (a NiceLabel Pro 4 or 5 file) is binary and sends Content-Type application/octet-stream",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "lbl",
+    "target": "zpl",
+    "bodyText": "NL-lbl"
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/lbl/to/zpl",
+    "headers": {
+      "content-type": "application/octet-stream",
+      "accept": "*/*"
+    },
+    "headersAbsent": [
+      "authorization"
+    ],
+    "headersMatch": {
+      "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+    },
+    "bodyText": "NL-lbl",
+    "queryAbsent": [
+      "params"
+    ]
+  }
+}

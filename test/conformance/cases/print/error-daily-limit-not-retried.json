@@ -1,0 +1,35 @@
+{
+  "id": "print/error-daily-limit-not-retried",
+  "note": "F5/E4: the daily job limit is a 429 whose Retry-After points at the UTC reset, hours away. It is a typed PrintQuotaExceeded (a RateLimited) and is never retried.",
+  "given": {
+    "client": {
+      "apiKey": "lz_test_print_key"
+    },
+    "operation": "print",
+    "printerId": "5b0e3c1a-8f2d-4c6e-9a7b-1d2e3f4a5b6c",
+    "source": "zpl",
+    "bodyText": "^XA^FO50,50^A0N,50,50^FDHello^FS^XZ",
+    "maxRetries": 2,
+    "responses": [
+      {
+        "status": 429,
+        "headers": {
+          "content-type": "application/json",
+          "retry-after": "14400"
+        },
+        "bodyText": "{\"type\":\"about:blank\",\"title\":\"Too Many Requests\",\"status\":429,\"detail\":\"Daily print job limit of 1000 reached. It resets at 2026-11-18T00:00:00.000Z.\",\"message\":\"Daily print job limit of 1000 reached. It resets at 2026-11-18T00:00:00.000Z.\",\"code\":\"daily_job_limit_reached\"}"
+      }
+    ]
+  },
+  "expect": {
+    "attempts": 1,
+    "sleepsSeconds": [],
+    "error": {
+      "kind": "PrintQuotaExceeded",
+      "status": 429,
+      "code": "daily_job_limit_reached",
+      "retryAfterSeconds": 14400,
+      "message": "Daily print job limit of 1000 reached. It resets at 2026-11-18T00:00:00.000Z."
+    }
+  }
+}

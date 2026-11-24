@@ -6,7 +6,7 @@ import { readsDescription } from './reads';
 
 export { print } from './print';
 export { printTemplate } from './printTemplate';
-export { getJob, getMany, getStatus } from './reads';
+export { getJob, getMany, getQuota, getStatus } from './reads';
 
 export const printerDescription: INodeProperties[] = [
 	{
@@ -27,6 +27,13 @@ export const printerDescription: INodeProperties[] = [
 				value: 'getMany',
 				description: 'List the printers on your account',
 				action: 'Get many printers',
+			},
+			{
+				name: 'Get Print Quota',
+				value: 'getQuota',
+				description:
+					"See your plan's agent, printer and daily job limits, what is used, and when the daily count resets",
+				action: 'Get the print quota',
 			},
 			{
 				name: 'Get Status',

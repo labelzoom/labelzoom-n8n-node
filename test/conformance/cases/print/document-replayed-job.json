@@ -1,0 +1,33 @@
+{
+  "id": "print/document-replayed-job",
+  "note": "P6: a replayed request returns the original job with idempotent true. A job without the member reads as false.",
+  "given": {
+    "client": {
+      "apiKey": "lz_test_print_key"
+    },
+    "operation": "print",
+    "printerId": "5b0e3c1a-8f2d-4c6e-9a7b-1d2e3f4a5b6c",
+    "source": "zpl",
+    "bodyText": "^XA^FO50,50^A0N,50,50^FDHello^FS^XZ",
+    "idempotencyKey": "SO-1001",
+    "responses": [
+      {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "bodyText": "{\"jobId\":\"9f1c7e2a-4b30-4d6e-8a11-5c2f9d4e7b83\",\"status\":\"completed\",\"copies\":3,\"idempotent\":true}"
+      }
+    ]
+  },
+  "expect": {
+    "result": {
+      "printJob": {
+        "jobId": "9f1c7e2a-4b30-4d6e-8a11-5c2f9d4e7b83",
+        "status": "completed",
+        "copies": 3,
+        "idempotent": true
+      }
+    }
+  }
+}

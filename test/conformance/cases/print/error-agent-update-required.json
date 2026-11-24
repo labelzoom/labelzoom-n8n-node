@@ -1,0 +1,31 @@
+{
+  "id": "print/error-agent-update-required",
+  "note": "E3/E4: a 422 is Unprocessable and carries the body's code, so a caller can branch on it without parsing the message.",
+  "given": {
+    "client": {
+      "apiKey": "lz_test_print_key"
+    },
+    "operation": "print",
+    "printerId": "5b0e3c1a-8f2d-4c6e-9a7b-1d2e3f4a5b6c",
+    "source": "zpl",
+    "bodyText": "^XA^FO50,50^A0N,50,50^FDHello^FS^XZ",
+    "copies": 3,
+    "responses": [
+      {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "bodyText": "{\"type\":\"about:blank\",\"title\":\"Unprocessable Content\",\"status\":422,\"detail\":\"The print agent \\\"Warehouse PC\\\" (version 2.3.0) serving this printer is too old to print copies. Update the LabelZoom Print Agent on that computer, then try again.\",\"message\":\"The print agent \\\"Warehouse PC\\\" (version 2.3.0) serving this printer is too old to print copies. Update the LabelZoom Print Agent on that computer, then try again.\",\"code\":\"agent_update_required\"}"
+      }
+    ]
+  },
+  "expect": {
+    "error": {
+      "kind": "Unprocessable",
+      "status": 422,
+      "code": "agent_update_required",
+      "message": "The print agent \"Warehouse PC\" (version 2.3.0) serving this printer is too old to print copies. Update the LabelZoom Print Agent on that computer, then try again."
+    }
+  }
+}

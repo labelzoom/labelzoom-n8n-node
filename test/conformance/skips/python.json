@@ -8,6 +8,10 @@
     {
       "id": "typecheck/url-is-not-a-target",
       "reason": "Python has no compile step; SourceFormat/TargetFormat are Literal types checked by mypy in a separate lint job, not by the test suite."
+    },
+    {
+      "id": "print/validation-base64-text-not-printable",
+      "reason": "print takes no base64-text input, so the call can't be written"
     }
   ]
 }

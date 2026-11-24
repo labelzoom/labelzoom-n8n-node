@@ -15,8 +15,39 @@ import { LabelZoomValidationError } from './validation';
  * query string entirely rather than sending `?params=%7B%7D`.
  */
 
+/** The `split` group: cut each source page into a grid of labels (§4.1). */
+export interface SplitOptions extends IDataObject {
+	rows?: number;
+	columns?: number;
+	width?: number;
+	height?: number;
+	left?: number;
+	top?: number;
+	columnGap?: number;
+	rowGap?: number;
+	skipBlank?: boolean;
+}
+
+/** The `layout` group: put several labels side by side on one printed row (§4.1). */
+export interface LayoutOptions extends IDataObject {
+	across?: number;
+	gap?: number;
+	fill?: string;
+}
+
 export interface ConversionOptions extends IDataObject {
+	/**
+	 * The 1.x single resolution, offered only by node version 1 so saved workflows
+	 * keep sending the request they always sent. Version 2 offers `sourceDpi` and
+	 * `targetDpi` instead (rule C8), and never sets this.
+	 */
 	dpi?: number;
+	sourceDpi?: number;
+	targetDpi?: number;
+	labelIndex?: number;
+	split?: SplitOptions;
+	layout?: LayoutOptions;
+	zplCollapseCopies?: boolean;
 	rotation?: number;
 	scaling?: number;
 	colorMode?: string;
@@ -54,11 +85,24 @@ function parseJsonParameter(node: INode, label: string, raw: string): unknown {
 	}
 }
 
+function definedEntries(group: IDataObject | undefined): IDataObject | undefined {
+	if (group === undefined || group === null || typeof group !== 'object') return undefined;
+	const entries = Object.entries(group).filter(([, value]) => value !== undefined && value !== '');
+	return entries.length === 0 ? undefined : Object.fromEntries(entries);
+}
+
 /** Build the `params` object. Returns `undefined` when the user set nothing. */
 export function buildConversionParams(node: INode, options: ConversionOptions): IDataObject | undefined {
 	const params: IDataObject = {};
 
+	// Rule C8: version 2 sends a resolution as `sourceDpi` (what the job or image
+	// was made for) and `targetDpi` (what the output is written at). The legacy
+	// `dpi` is version 1's field, passed through unchanged for saved workflows.
 	if (options.dpi !== undefined) params.dpi = options.dpi;
+	if (options.sourceDpi !== undefined) params.sourceDpi = options.sourceDpi;
+	if (options.targetDpi !== undefined) params.targetDpi = options.targetDpi;
+	// 0-based, and 0 is a legitimate value: hence the explicit undefined check.
+	if (options.labelIndex !== undefined) params.labelIndex = options.labelIndex;
 
 	if (options.rotation !== undefined) {
 		// Validated locally so an obviously-wrong value costs no API call — the
@@ -109,6 +153,9 @@ export function buildConversionParams(node: INode, options: ConversionOptions): 
 	if (options.zplImageCompression !== undefined) {
 		setNested(params, ['zpl', 'imageCompression'], options.zplImageCompression);
 	}
+	if (options.zplCollapseCopies !== undefined) {
+		setNested(params, ['zpl', 'collapseCopies'], options.zplCollapseCopies);
+	}
 	if (options.zplCommandsToIgnore !== undefined && options.zplCommandsToIgnore !== '') {
 		const commands = options.zplCommandsToIgnore
 			.split(',')
@@ -116,6 +163,14 @@ export function buildConversionParams(node: INode, options: ConversionOptions): 
 			.filter((command) => command !== '');
 		if (commands.length > 0) setNested(params, ['zpl', 'commandsToIgnore'], commands);
 	}
+
+	// Groups: only the fields the user added are sent (rule C1). An unset
+	// split.width / split.height means "divide the page equally", so a default
+	// must never be filled in for them.
+	const split = definedEntries(options.split);
+	if (split !== undefined) params.split = split;
+	const layout = definedEntries(options.layout);
+	if (layout !== undefined) params.layout = layout;
 
 	if (options.data !== undefined && options.data !== '') {
 		const parsed = parseJsonParameter(node, 'Variable Data', options.data);

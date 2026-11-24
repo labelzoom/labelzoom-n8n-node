@@ -1,0 +1,42 @@
+{
+  "id": "request/param-source-and-target-dpi",
+  "note": "C2/C8: a job made for a 300 dpi head, written for a 203 dpi one. Both resolutions travel side by side; neither is folded into the legacy dpi.",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "zpl",
+    "target": "png",
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ",
+    "options": {
+      "sourceDpi": 300,
+      "targetDpi": 203
+    }
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/zpl/to/png",
+    "headers": {
+      "content-type": "text/plain",
+      "accept": "*/*"
+    },
+    "headersAbsent": [
+      "authorization"
+    ],
+    "headersMatch": {
+      "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+    },
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ",
+    "queryJson": {
+      "params": {
+        "sourceDpi": 300,
+        "targetDpi": 203
+      }
+    },
+    "queryJsonAbsentKeys": {
+      "params": [
+        "dpi"
+      ]
+    }
+  }
+}

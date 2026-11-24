@@ -1,0 +1,30 @@
+{
+  "id": "request/source-btw",
+  "note": "B1: btw (a BarTender .btw or .btc file) is binary and sends Content-Type application/octet-stream",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "btw",
+    "target": "zpl",
+    "bodyText": "BT-btw"
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/btw/to/zpl",
+    "headers": {
+      "content-type": "application/octet-stream",
+      "accept": "*/*"
+    },
+    "headersAbsent": [
+      "authorization"
+    ],
+    "headersMatch": {
+      "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+    },
+    "bodyText": "BT-btw",
+    "queryAbsent": [
+      "params"
+    ]
+  }
+}

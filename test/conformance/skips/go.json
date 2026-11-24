@@ -1,4 +1,9 @@
 {
   "language": "go",
-  "skips": []
+  "skips": [
+    {
+      "id": "print/validation-base64-text-not-printable",
+      "reason": "print takes no base64-text input, so the call can't be written"
+    }
+  ]
 }

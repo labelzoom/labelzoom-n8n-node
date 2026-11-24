@@ -8,34 +8,42 @@ import type { INodeProperties } from 'n8n-workflow';
  */
 
 /** The document input: a binary file from a previous node, or inline text. */
-export function documentInputFields(showFor: {
-	resource: string[];
-	operation: string[];
-}): INodeProperties[] {
+export function documentInputFields(
+	showFor: {
+		resource: string[];
+		operation: string[];
+	},
+	{ allowBase64 = true }: { allowBase64?: boolean } = {},
+): INodeProperties[] {
+	const inputTypes = [
+		{
+			name: 'Binary File',
+			value: 'binary',
+			description: 'Use a file attached to the incoming item (a PDF, PNG, or label file)',
+		},
+		{
+			name: 'Text',
+			value: 'text',
+			description:
+				'Type or map label code directly (ZPL, EPL, IPL, TSPL, DPL, SBPL, CPCL, XML, JSON and the other text formats)',
+		},
+		{
+			name: 'Base64 Text',
+			value: 'base64',
+			description:
+				'A base64-encoded PDF or image, sent as text. Useful when an upstream node hands you base64 rather than a file.',
+		},
+	];
 	return [
 		{
 			displayName: 'Input Type',
 			name: 'inputType',
 			type: 'options',
 			noDataExpression: true,
-			options: [
-				{
-					name: 'Binary File',
-					value: 'binary',
-					description: 'Use a file attached to the incoming item (a PDF, PNG, or label file)',
-				},
-				{
-					name: 'Text',
-					value: 'text',
-					description: 'Type or map label code directly (ZPL, EPL, IPL, TSPL, DPL, SBPL, XML, JSON)',
-				},
-				{
-					name: 'Base64 Text',
-					value: 'base64',
-					description:
-						'A base64-encoded PDF or image, sent as text. Useful when an upstream node hands you base64 rather than a file.',
-				},
-			],
+			// Print reads the body as the format's own bytes, so base64 text would
+			// reach the printer as base64 (contract rule P2). Turn base64 into a file
+			// with n8n's Convert to File node first.
+			options: allowBase64 ? inputTypes : inputTypes.filter((type) => type.value !== 'base64'),
 			default: 'binary',
 			displayOptions: { show: showFor },
 		},
@@ -76,6 +84,14 @@ export function conversionOptionsField(
 		displayOptions: { show: showFor },
 		options: [
 			{
+				displayName: 'Collapse Identical Labels',
+				name: 'zplCollapseCopies',
+				type: 'boolean',
+				default: false,
+				description:
+					'Whether to write each run of identical labels as one ZPL label with a ^PQ count. Image or PDF to ZPL, in Image mode.',
+			},
+			{
 				displayName: 'Color Mode',
 				name: 'colorMode',
 				type: 'options',
@@ -113,12 +129,15 @@ export function conversionOptionsField(
 				description: 'Output dialect. Requires a paid plan.',
 			},
 			{
+				// Node version 1 only. Version 2 splits it into Source DPI and Target DPI,
+				// and saved version 1 workflows keep sending exactly what they sent before.
 				displayName: 'DPI',
 				name: 'dpi',
 				type: 'number',
 				default: 203,
 				description:
 					'Print density in dots per inch. Thermal printers are commonly 203; match the printer you will send to.',
+				displayOptions: { show: { '@version': [1] } },
 			},
 			{
 				displayName: 'Label Height (Inches)',
@@ -128,11 +147,66 @@ export function conversionOptionsField(
 				description: 'Override the output label height. Leave unset to detect it from the source.',
 			},
 			{
+				displayName: 'Label Index',
+				name: 'labelIndex',
+				type: 'number',
+				typeOptions: { minValue: 0, numberPrecision: 0 },
+				default: 0,
+				description:
+					'Convert only this label of a multi-label document (0-based, counted after any split). Leave unset to convert every label.',
+			},
+			{
 				displayName: 'Label Width (Inches)',
 				name: 'labelWidth',
 				type: 'number',
 				default: 4,
 				description: 'Override the output label width. Leave unset to detect it from the source.',
+			},
+			{
+				displayName: 'Layout',
+				name: 'layout',
+				type: 'collection',
+				placeholder: 'Add layout field',
+				default: {},
+				description:
+					'Print several labels side by side on one row of a multi-across roll. Image or PDF to ZPL, in Image mode.',
+				options: [
+					{
+						displayName: 'Across',
+						name: 'across',
+						type: 'number',
+						typeOptions: { minValue: 1, maxValue: 10, numberPrecision: 0 },
+						default: 1,
+						description: 'How many labels share one printed row, from 1 to 10',
+					},
+					{
+						displayName: 'Fill',
+						name: 'fill',
+						type: 'options',
+						options: [
+							{
+								name: 'Sequential',
+								value: 'SEQUENTIAL',
+								description: 'Each label once, in order, across then down',
+							},
+							{
+								name: 'Repeat',
+								value: 'REPEAT',
+								description: 'Every slot in a row repeats the same label',
+							},
+						],
+						default: 'SEQUENTIAL',
+						description: 'How labels fill the slots in each row',
+					},
+					{
+						displayName: 'Gap (Inches)',
+						name: 'gap',
+						type: 'number',
+						typeOptions: { minValue: 0 },
+						default: 0,
+						description: 'Space between labels in a row',
+					},
+				],
 			},
 			{
 				displayName: 'PDF Conversion Mode',
@@ -187,6 +261,104 @@ export function conversionOptionsField(
 				type: 'number',
 				default: 100,
 				description: 'Scale the output. 50 halves it, 200 doubles it.',
+			},
+			{
+				displayName: 'Source DPI',
+				name: 'sourceDpi',
+				type: 'number',
+				default: 203,
+				description:
+					'The resolution the label code or image was made for, in dots per inch. Printer-language and image sources only. When Target DPI is unset, the output follows it.',
+				displayOptions: { show: { '@version': [{ _cnd: { gte: 2 } }] } },
+			},
+			{
+				displayName: 'Split Page Into Labels',
+				name: 'split',
+				type: 'collection',
+				placeholder: 'Add split field',
+				default: {},
+				description:
+					'Cut each page into a grid of labels, such as a sheet of 30 address labels. Image or PDF to ZPL, in Image mode. Lengths are in inches on the source page.',
+				options: [
+					{
+						displayName: 'Column Gap (Inches)',
+						name: 'columnGap',
+						type: 'number',
+						typeOptions: { minValue: 0 },
+						default: 0,
+					},
+					{
+						displayName: 'Columns',
+						name: 'columns',
+						type: 'number',
+						typeOptions: { minValue: 1, maxValue: 20, numberPrecision: 0 },
+						default: 1,
+						description: 'Labels across the page, from 1 to 20',
+					},
+					{
+						displayName: 'Label Height (Inches)',
+						name: 'height',
+						type: 'number',
+						typeOptions: { minValue: 0 },
+						default: 1,
+						description: 'Leave unset to divide the page equally',
+					},
+					{
+						displayName: 'Label Width (Inches)',
+						name: 'width',
+						type: 'number',
+						typeOptions: { minValue: 0 },
+						default: 1,
+						description: 'Leave unset to divide the page equally',
+					},
+					{
+						displayName: 'Left Margin (Inches)',
+						name: 'left',
+						type: 'number',
+						typeOptions: { minValue: 0 },
+						default: 0,
+						description: 'From the left edge of the page to the first column',
+					},
+					{
+						displayName: 'Row Gap (Inches)',
+						name: 'rowGap',
+						type: 'number',
+						typeOptions: { minValue: 0 },
+						default: 0,
+					},
+					{
+						displayName: 'Rows',
+						name: 'rows',
+						type: 'number',
+						typeOptions: { minValue: 1, maxValue: 20, numberPrecision: 0 },
+						default: 1,
+						description: 'Labels down the page, from 1 to 20. A page holds at most 100 labels.',
+					},
+					{
+						displayName: 'Skip Blank Labels',
+						name: 'skipBlank',
+						type: 'boolean',
+						default: false,
+						description: 'Whether to leave out labels with nothing printable on them',
+					},
+					{
+						displayName: 'Top Margin (Inches)',
+						name: 'top',
+						type: 'number',
+						typeOptions: { minValue: 0 },
+						default: 0,
+						description: 'From the top edge of the page to the first row',
+					},
+				],
+			},
+			{
+				displayName: 'Target DPI',
+				name: 'targetDpi',
+				type: 'number',
+				default: 203,
+				description:
+					'The resolution of the output, in dots per inch. Match the printer you will send to. Every target but PDF.',
+				displayOptions: { show: { '@version': [{ _cnd: { gte: 2 } }] } },
 			},
 			{
 				displayName: 'Variable Data (JSON)',

@@ -1,5 +1,4 @@
 import type { IExecuteFunctions } from 'n8n-workflow';
-import { NodeOperationError } from 'n8n-workflow';
 
 import { LabelZoomValidationError } from './validation';
 
@@ -60,7 +59,13 @@ export function resourceId(
 		extractValue: true,
 	}) as string;
 	if (typeof value !== 'string' || value.trim() === '') {
-		throw new NodeOperationError(this.getNode(), `No ${parameterName} was provided`, { itemIndex });
+		// Rule P7: an empty id would build a path the API can only 404 on.
+		throw new LabelZoomValidationError(
+			this.getNode(),
+			parameterName,
+			`No ${parameterName} was provided`,
+			{ itemIndex },
+		);
 	}
 	return value.trim();
 }

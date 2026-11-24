@@ -1,4 +1,4 @@
-import type { IExecuteFunctions, INodeProperties } from 'n8n-workflow';
+import type { IExecuteFunctions, INodeProperties, JsonObject } from 'n8n-workflow';
 
 import { LabelZoomValidationError } from '../../shared/validation';
 
@@ -78,9 +78,48 @@ export function idempotencyKeyField(showFor: ShowFor): INodeProperties {
 		type: 'string',
 		default: '={{ $execution.id }}-{{ $itemIndex }}',
 		description:
-			'Repeating a key with the same request returns the original job instead of printing again; reusing it for a different document, merge data or Copies is rejected. Set it from a stable business value (an order number) to make a whole workflow re-run safe.',
+			'Repeating a key with the same request returns the original job instead of printing again; reusing it for a different document, merge data or Copies is rejected. Set it from a stable business value (an order number) to make a whole workflow re-run safe. Leave it empty to have the node generate a key for each print.',
 		displayOptions: { show: showFor },
 	};
+}
+
+/**
+ * Read the Idempotency-Key to send (rule P4).
+ *
+ * Every print carries one. A key the user sets is sent exactly as given, and one
+ * that is only whitespace is refused rather than silently replaced: it is almost
+ * always an expression that resolved to nothing. An empty field gets a random
+ * UUID v4, made once per item, so the transport's retries of this call reuse it
+ * and a retry after a lost response returns the original job instead of printing
+ * twice.
+ */
+export function readIdempotencyKey(this: IExecuteFunctions, itemIndex: number): string {
+	const raw: unknown = this.getNodeParameter('idempotencyKey', itemIndex, '');
+	const key = raw === undefined || raw === null ? '' : String(raw);
+	if (key === '') return crypto.randomUUID();
+	if (key.trim() === '') {
+		throw new LabelZoomValidationError(
+			this.getNode(),
+			'idempotencyKey',
+			'Idempotency Key is blank',
+			{
+				itemIndex,
+				description:
+					'Set it from a stable value such as an order number, or clear the field to have the node generate one for each print.',
+			},
+		);
+	}
+	return key;
+}
+
+/**
+ * Fill in what a print job response may omit (rule P6): `copies` is null when it
+ * wasn't set, and `idempotent` is false unless the server replayed the job. The
+ * status is kept as the server's string, so a status added later still passes
+ * through.
+ */
+export function normalizePrintJob(job: JsonObject): JsonObject {
+	return { ...job, copies: job.copies ?? null, idempotent: job.idempotent === true };
 }
 
 /** The API accepts `copies` from 1 to this, inclusive. */

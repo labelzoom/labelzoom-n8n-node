@@ -1,0 +1,31 @@
+{
+  "id": "request/source-btw-base64-text-mode",
+  "note": "B1: a binary design file in base64/text mode sends text/plain too, as a PDF does. The base64 alternative covers NiceLabel, BarTender and DYMO sources as well as PDF and images.",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "btw",
+    "target": "zpl",
+    "bodyText": "QlQtYnR3",
+    "sourceEncoding": "base64text"
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/btw/to/zpl",
+    "headers": {
+      "content-type": "text/plain",
+      "accept": "*/*"
+    },
+    "headersAbsent": [
+      "authorization"
+    ],
+    "headersMatch": {
+      "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+    },
+    "bodyText": "QlQtYnR3",
+    "queryAbsent": [
+      "params"
+    ]
+  }
+}

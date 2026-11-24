@@ -1,0 +1,18 @@
+{
+  "id": "response/error-problem-json",
+  "note": "E2: the API's error body is an RFC 9457 problem document (application/problem+json). It keeps a top-level 'message' equal to 'detail', so extraction step 1 applies unchanged. The media type is not special-cased.",
+  "given": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/problem+json"
+    },
+    "bodyText": "{\"type\":\"about:blank\",\"title\":\"Bad Request\",\"status\":400,\"detail\":\"Query parameter 'params' is not valid JSON\",\"instance\":\"/api/v2/convert/zpl/to/pdf\",\"message\":\"Query parameter 'params' is not valid JSON\",\"requestId\":\"2026/11/03/120000--0b5f2c1e-7a8d-4e3b-9c41-6d2f0a9e1b37\"}"
+  },
+  "expect": {
+    "error": {
+      "kind": "BadRequest",
+      "status": 400,
+      "message": "Query parameter 'params' is not valid JSON"
+    }
+  }
+}

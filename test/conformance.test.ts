@@ -3,7 +3,7 @@
  *
  * The node cannot depend on `@labelzoom/sdk` — n8n verification forbids runtime
  * dependencies — so it re-implements the wire contract by hand. These are the
- * same 87 fixtures the eight language SDKs run, and they are the only thing
+ * same fixtures the eight language SDKs run, and they are the only thing
  * stopping the two implementations from drifting apart.
  *
  * Entirely offline: the HTTP helper is a recording stub, so this passes on a fork
@@ -28,9 +28,10 @@ vi.mock('n8n-workflow', async (importOriginal) => {
 });
 
 import { convert } from '../nodes/LabelZoom/resources/label/convert';
+import { getJob, getQuota, print, printTemplate } from '../nodes/LabelZoom/resources/printer';
 import { TARGET_FORMATS } from '../nodes/LabelZoom/shared/formats';
 import { LabelZoomValidationError } from '../nodes/LabelZoom/shared/validation';
-import { makeHarness, type ScriptedResponse } from './helpers/harness';
+import { makeHarness, type RecordedRequest, type ScriptedResponse } from './helpers/harness';
 
 // Fixtures are pulled in by the bundler rather than read off disk: an n8n
 // community node may not import node:fs, and while that restriction is really
@@ -75,7 +76,11 @@ function nodeParameters(given: any): Record<string, unknown> {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	for (const [key, value] of Object.entries((given.options ?? {}) as Record<string, any>)) {
 		switch (key) {
-			case 'dpi':
+			case 'sourceDpi':
+			case 'targetDpi':
+			case 'labelIndex':
+			case 'split':
+			case 'layout':
 			case 'rotation':
 			case 'scaling':
 			case 'colorMode':
@@ -101,6 +106,7 @@ function nodeParameters(given: any): Record<string, unknown> {
 					options.zplCommandsToIgnore = (value.commandsToIgnore as string[]).join(',');
 				}
 				if (value.imageCompression !== undefined) options.zplImageCompression = value.imageCompression;
+				if (value.collapseCopies !== undefined) options.zplCollapseCopies = value.collapseCopies;
 				break;
 			case 'data':
 				options.data = JSON.stringify(value);
@@ -112,6 +118,8 @@ function nodeParameters(given: any): Record<string, unknown> {
 				);
 		}
 	}
+
+	if (given.operation !== undefined) return printParameters(given, options);
 
 	// response/* and retry/* fixtures describe what comes *back*, so they carry no
 	// source, target or body. The SDK runners hardcode a zpl→zpl call for those;
@@ -127,6 +135,45 @@ function nodeParameters(given: any): Record<string, unknown> {
 		outputBinaryPropertyName: 'data',
 		options,
 	};
+}
+
+/**
+ * The print/* fixtures name a call (`operation`) and its inputs. Inputs a fixture
+ * leaves out are the ones the caller didn't set, so each maps to the node's
+ * "not set" value: Copies 1 (never sent), Validate off, and an empty
+ * Idempotency Key, which makes the node generate one.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function printParameters(given: any, options: Record<string, unknown>): Record<string, unknown> {
+	const printer = { printerId: { mode: 'id', value: given.printerId ?? '' } };
+	switch (given.operation) {
+		case 'print':
+			return {
+				...printer,
+				sourceFormat: given.source,
+				inputType: given.sourceEncoding === 'base64text' ? 'base64' : 'text',
+				labelContent: given.bodyText ?? '',
+				copies: given.copies ?? 1,
+				idempotencyKey: given.idempotencyKey ?? '',
+				waitForCompletion: false,
+				options,
+			};
+		case 'printTemplate':
+			return {
+				...printer,
+				templateId: { mode: 'id', value: given.templateId ?? '' },
+				mergeData: given.data === undefined ? '{}' : JSON.stringify(given.data),
+				validate: given.validate ?? false,
+				copies: given.copies ?? 1,
+				idempotencyKey: given.idempotencyKey ?? '',
+			};
+		case 'getJob':
+			return { jobId: given.jobId };
+		case 'getQuota':
+			return {};
+		default:
+			throw new Error(`Unknown print operation '${given.operation}'.`);
+	}
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -154,9 +201,11 @@ function harnessFor(given: any, responses: ScriptedResponse[], maxRetries?: numb
 async function runRequestCase(given: any, expected: any): Promise<void> {
 	const { ctx, requests } = harnessFor(given, [OK_RESPONSE]);
 	await convert.call(ctx, 0);
+	assertRequest(requests[requests.length - 1], expected);
+}
 
-	const request = requests[requests.length - 1];
-
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function assertRequest(request: RecordedRequest, expected: any): void {
 	if (expected.method !== undefined) expect(request.method).toBe(expected.method);
 	if (expected.url !== undefined) expect(request.url.origin + request.url.pathname).toBe(expected.url);
 	if (expected.path !== undefined) expect(request.url.pathname).toBe(expected.path);
@@ -200,7 +249,12 @@ async function runRequestCase(given: any, expected: any): Promise<void> {
 		}
 	}
 
+	for (const [name, value] of Object.entries(expected.query ?? {})) {
+		expect(request.url.searchParams.get(name), `query parameter ${name}`).toBe(value);
+	}
+
 	if (expected.bodyText !== undefined) expect(request.bodyText).toBe(expected.bodyText);
+	if (expected.bodyJson !== undefined) expect(JSON.parse(request.bodyText)).toEqual(expected.bodyJson);
 }
 
 const ERROR_STATUS: Record<string, number> = {
@@ -209,7 +263,9 @@ const ERROR_STATUS: Record<string, number> = {
 	Forbidden: 403,
 	NotFound: 404,
 	PayloadTooLarge: 413,
+	Unprocessable: 422,
 	RateLimited: 429,
+	PrintQuotaExceeded: 429,
 	ServerError: 500,
 };
 
@@ -238,6 +294,12 @@ function assertError(expectedError: any, error: any, requestId?: string | null):
 	}
 	if ('requestId' in expectedError) {
 		expect(requestId ?? null).toBe(expectedError.requestId);
+	}
+	if ('code' in expectedError) {
+		// Rule E3. Kept on the error's context for expressions, and named in its
+		// description for a person reading the failure.
+		expect(error.context?.code ?? null, 'error code').toBe(expectedError.code);
+		if (expectedError.code !== null) expect(error.description ?? '').toContain(expectedError.code);
 	}
 }
 
@@ -347,6 +409,96 @@ function runTypecheckCase(given: any): void {
 	}
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function assertSubset(expected: unknown, actual: any, path: string): void {
+	if (expected !== null && typeof expected === 'object' && !Array.isArray(expected)) {
+		expect(actual, path).toBeTypeOf('object');
+		for (const [key, value] of Object.entries(expected)) {
+			expect(Object.hasOwn(actual, key), `${path}.${key} is missing`).toBe(true);
+			assertSubset(value, actual[key], `${path}.${key}`);
+		}
+	} else if (Array.isArray(expected)) {
+		expect(Array.isArray(actual), path).toBe(true);
+		expect(actual.length, `${path}.length`).toBe(expected.length);
+		expected.forEach((item, i) => assertSubset(item, actual[i], `${path}[${i}]`));
+	} else if (typeof expected === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(expected)) {
+		// The node passes timestamps through as the server's strings; the fixture
+		// names the instant, which a different spelling of the same time matches.
+		expect(typeof actual, path).toBe('string');
+		expect(new Date(actual).getTime(), path).toBe(new Date(expected).getTime());
+	} else {
+		expect(actual, path).toEqual(expected);
+	}
+}
+
+const camelCase = (key: string) => key.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
+
+/**
+ * Translate the node's output into the contract's result shapes (rule P6).
+ *
+ * Two differences are n8n's naming, not behavior: Get Job passes the job through
+ * with the wire's snake_case keys, which saved workflows read, so the keys are
+ * camel-cased here; and a template print of one record outputs that job, the
+ * node's representation of a batch of one.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function contractResult(kind: string, json: any): unknown {
+	switch (kind) {
+		case 'job':
+			return Object.fromEntries(Object.entries(json).map(([key, value]) => [camelCase(key), value]));
+		case 'printBatch':
+			return Array.isArray(json.jobs) ? json : { jobs: [json], remaining: 0, message: null };
+		default:
+			return json;
+	}
+}
+
+const PRINT_OPERATIONS = { print, printTemplate, getJob, getQuota } as const;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function runPrintCase(given: any, expected: any): Promise<void> {
+	const random = vi.spyOn(Math, 'random').mockReturnValue(1);
+	try {
+		const { ctx, requests } = harnessFor(given, given.responses, given.maxRetries ?? 0);
+		const operation = PRINT_OPERATIONS[given.operation as keyof typeof PRINT_OPERATIONS];
+		const outcome = await operation.call(ctx, 0).then(
+			(result) => ({ result, error: undefined as unknown }),
+			(error: unknown) => ({ result: undefined, error }),
+		);
+
+		if (expected.validationError !== undefined) {
+			expect(outcome.error).toBeInstanceOf(LabelZoomValidationError);
+			expect((outcome.error as LabelZoomValidationError).parameter).toBe(
+				expected.validationError.parameter,
+			);
+			expect(requests.length, 'requests sent').toBe(expected.requestsSent);
+			return;
+		}
+
+		if (expected.error !== undefined) {
+			expect(outcome.error, 'expected the call to reject').toBeDefined();
+			assertError(expected.error, outcome.error);
+		} else {
+			if (outcome.error !== undefined) throw outcome.error;
+			const [kind, expectedResult] = Object.entries(expected.result)[0] as [string, unknown];
+			assertSubset(expectedResult, contractResult(kind, outcome.result?.json), kind);
+		}
+
+		if (expected.request !== undefined) assertRequest(requests[0], expected.request);
+		if (expected.attempts !== undefined) expect(requests.length, 'attempts').toBe(expected.attempts);
+		if (expected.sleepsSeconds !== undefined) {
+			expect(sleeps.map((ms) => ms / 1000)).toEqual(expected.sleepsSeconds);
+		}
+		for (const name of expected.sameHeaderAcrossAttempts ?? []) {
+			const values = requests.map((r) => r.headers[name]);
+			expect(values[0], `header ${name}`).toBeDefined();
+			expect(new Set(values).size, `header ${name} must be identical on every attempt`).toBe(1);
+		}
+	} finally {
+		random.mockRestore();
+	}
+}
+
 const executed = new Set<string>();
 
 beforeEach(() => {
@@ -378,6 +530,9 @@ describe('conformance', () => {
 				case 'typecheck':
 					runTypecheckCase(given);
 					break;
+				case 'print':
+					await runPrintCase(given, expected);
+					break;
 				default:
 					throw new Error(`Unknown case kind for '${caseId}'.`);
 			}
@@ -392,7 +547,7 @@ describe('conformance', () => {
 	 * is asserted rather than assumed.
 	 */
 	it('covers every declared case', () => {
-		expect(spec.version, 'vendored spec version').toBe('1.2.0');
+		expect(spec.version, 'vendored spec version').toBe('2.2.0');
 		expect(allCaseIds.length, 'case count').toBe(spec.caseCount);
 
 		for (const [id, reason] of Object.entries(skips)) {

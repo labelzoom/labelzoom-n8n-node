@@ -12,6 +12,7 @@ import { convert, convertTemplate, labelDescription } from './resources/label';
 import {
 	getJob,
 	getMany,
+	getQuota,
 	getStatus,
 	print,
 	printTemplate,
@@ -44,6 +45,7 @@ async function runOperation(
 		if (operation === 'printTemplate') return [await printTemplate.call(this, itemIndex)];
 		if (operation === 'getJob') return [await getJob.call(this, itemIndex)];
 		if (operation === 'getStatus') return [await getStatus.call(this, itemIndex)];
+		if (operation === 'getQuota') return [await getQuota.call(this, itemIndex)];
 		if (operation === 'getMany') return await getMany.call(this, itemIndex);
 		throw new NodeOperationError(this.getNode(), `Unknown printer operation: ${operation}`, {
 			itemIndex,
@@ -59,7 +61,11 @@ export class LabelZoom implements INodeType {
 		name: 'labelZoom',
 		icon: { light: 'file:../../icons/labelzoom.svg', dark: 'file:../../icons/labelzoom.dark.svg' },
 		group: ['transform'],
-		version: 1,
+		// Version 2 replaces the single DPI option with Source DPI and Target DPI
+		// (contract rule C8). Version 1 stays so saved workflows keep their DPI field
+		// and send exactly the request they always sent.
+		version: [1, 2],
+		defaultVersion: 2,
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
 		description: 'Convert barcode labels between formats and print them to thermal printers',
 		defaults: { name: 'LabelZoom' },

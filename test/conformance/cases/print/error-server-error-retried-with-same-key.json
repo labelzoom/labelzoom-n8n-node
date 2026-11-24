@@ -1,0 +1,58 @@
+{
+  "id": "print/error-server-error-retried-with-same-key",
+  "note": "P4/F1: a 5xx is retried, under the same Idempotency-Key.",
+  "given": {
+    "client": {
+      "apiKey": "lz_test_print_key"
+    },
+    "operation": "printTemplate",
+    "printerId": "5b0e3c1a-8f2d-4c6e-9a7b-1d2e3f4a5b6c",
+    "templateId": "7c8a0f8e-1111-4222-8333-444455556666",
+    "data": [
+      {
+        "orderNumber": "SO-1001",
+        "sku": "A-100"
+      }
+    ],
+    "responses": [
+      {
+        "status": 503,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "bodyText": "{\"message\":\"Service Unavailable\"}"
+      },
+      {
+        "status": 202,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "bodyText": "{\"jobId\":\"9f1c7e2a-4b30-4d6e-8a11-5c2f9d4e7b83\",\"status\":\"dispatched\",\"copies\":null}"
+      }
+    ],
+    "maxRetries": 2
+  },
+  "expect": {
+    "attempts": 2,
+    "sleepsSeconds": [
+      1
+    ],
+    "sameHeaderAcrossAttempts": [
+      "idempotency-key"
+    ],
+    "result": {
+      "printBatch": {
+        "jobs": [
+          {
+            "jobId": "9f1c7e2a-4b30-4d6e-8a11-5c2f9d4e7b83",
+            "status": "dispatched",
+            "copies": null,
+            "idempotent": false
+          }
+        ],
+        "remaining": 0,
+        "message": null
+      }
+    }
+  }
+}

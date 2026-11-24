@@ -1,0 +1,62 @@
+{
+  "id": "print/get-quota",
+  "note": "P5/P6: the account's print limits and usage. resetAt compares as an instant.",
+  "given": {
+    "client": {
+      "apiKey": "lz_test_print_key"
+    },
+    "operation": "getQuota",
+    "responses": [
+      {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "bodyText": "{\"plan\":\"beta\",\"agents\":{\"used\":1,\"pending\":1,\"limit\":5,\"remaining\":3},\"printers\":{\"used\":2,\"limit\":10,\"remaining\":8},\"jobsToday\":{\"used\":40,\"limit\":1000,\"remaining\":960,\"resetAt\":\"2026-11-18T00:00:00.000Z\"},\"limits\":{\"maxPayloadBytes\":4194304,\"maxStoredPayloadBytes\":8388608,\"maxBatchSize\":25}}"
+      }
+    ]
+  },
+  "expect": {
+    "request": {
+      "method": "GET",
+      "path": "/api/v3/print/quota",
+      "headers": {
+        "accept": "application/json",
+        "authorization": "Bearer lz_test_print_key"
+      },
+      "headersAbsent": [
+        "idempotency-key"
+      ],
+      "headersMatch": {
+        "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+      }
+    },
+    "result": {
+      "quota": {
+        "plan": "beta",
+        "agents": {
+          "used": 1,
+          "pending": 1,
+          "limit": 5,
+          "remaining": 3
+        },
+        "printers": {
+          "used": 2,
+          "limit": 10,
+          "remaining": 8
+        },
+        "jobsToday": {
+          "used": 40,
+          "limit": 1000,
+          "remaining": 960,
+          "resetAt": "2026-11-18T00:00:00Z"
+        },
+        "limits": {
+          "maxPayloadBytes": 4194304,
+          "maxStoredPayloadBytes": 8388608,
+          "maxBatchSize": 25
+        }
+      }
+    }
+  }
+}
