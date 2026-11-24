@@ -1,20 +1,17 @@
 {
-  "id": "request/param-dpi",
-  "note": "C2: dpi travels inside the single ?params= JSON object.",
+  "id": "request/target-cpcl",
+  "note": "1.1/7: Zebra CPCL, for Zebra's mobile printers, is a target as well as a source. text/plain out, all labels concatenated. B2: Accept is */* for every target.",
   "given": {
     "client": {
       "apiKey": null
     },
     "source": "zpl",
-    "target": "png",
-    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ",
-    "options": {
-      "dpi": 300
-    }
+    "target": "cpcl",
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ"
   },
   "expect": {
     "method": "POST",
-    "path": "/api/v2/convert/zpl/to/png",
+    "path": "/api/v2/convert/zpl/to/cpcl",
     "headers": {
       "content-type": "text/plain",
       "accept": "*/*"
@@ -26,10 +23,8 @@
       "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
     },
     "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ",
-    "queryJson": {
-      "params": {
-        "dpi": 300
-      }
-    }
+    "queryAbsent": [
+      "params"
+    ]
   }
 }

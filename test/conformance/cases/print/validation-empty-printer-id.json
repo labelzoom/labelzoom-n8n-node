@@ -1,0 +1,20 @@
+{
+  "id": "print/validation-empty-printer-id",
+  "note": "P7: an empty printer id would address a different endpoint.",
+  "given": {
+    "client": {
+      "apiKey": "lz_test_print_key"
+    },
+    "operation": "print",
+    "printerId": "",
+    "source": "zpl",
+    "bodyText": "^XA^FO50,50^A0N,50,50^FDHello^FS^XZ",
+    "responses": []
+  },
+  "expect": {
+    "validationError": {
+      "parameter": "printerId"
+    },
+    "requestsSent": 0
+  }
+}

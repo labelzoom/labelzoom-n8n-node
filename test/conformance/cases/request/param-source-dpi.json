@@ -1,0 +1,41 @@
+{
+  "id": "request/param-source-dpi",
+  "note": "C2/C8: the source stage's dpi is the resolution the job was made for, and travels as sourceDpi inside the single ?params= object. The legacy dpi key is never sent: it would set both sides, and targetDpi stays unset so the server can follow the source.",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "zpl",
+    "target": "png",
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ",
+    "options": {
+      "sourceDpi": 300
+    }
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/zpl/to/png",
+    "headers": {
+      "content-type": "text/plain",
+      "accept": "*/*"
+    },
+    "headersAbsent": [
+      "authorization"
+    ],
+    "headersMatch": {
+      "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+    },
+    "bodyText": "^XA^FO20,20^A0N,28^FDhi^FS^XZ",
+    "queryJson": {
+      "params": {
+        "sourceDpi": 300
+      }
+    },
+    "queryJsonAbsentKeys": {
+      "params": [
+        "dpi",
+        "targetDpi"
+      ]
+    }
+  }
+}

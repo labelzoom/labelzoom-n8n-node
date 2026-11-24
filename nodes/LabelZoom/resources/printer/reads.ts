@@ -2,6 +2,7 @@ import type { IExecuteFunctions, INodeExecutionData, INodeProperties, JsonObject
 
 import { labelZoomJsonRequest } from '../../shared/transport';
 import { resourceId } from '../../shared/utils';
+import { LabelZoomValidationError } from '../../shared/validation';
 import { printerLocator } from './shared';
 
 const getJobShowFor = { resource: ['printer'], operation: ['getJob'] };
@@ -35,13 +36,26 @@ export async function getJob(
 	this: IExecuteFunctions,
 	itemIndex: number,
 ): Promise<INodeExecutionData> {
-	const jobId = this.getNodeParameter('jobId', itemIndex) as string;
-	const job = await labelZoomJsonRequest.call(
-		this,
-		'GET',
-		`/api/v3/jobs/${encodeURIComponent(jobId.trim())}`,
-	);
+	const jobId = String(this.getNodeParameter('jobId', itemIndex) ?? '').trim();
+	if (jobId === '') {
+		throw new LabelZoomValidationError(this.getNode(), 'jobId', 'No Job ID was provided', {
+			itemIndex,
+		});
+	}
+	const job = await labelZoomJsonRequest.call(this, 'GET', `/api/v3/jobs/${encodeURIComponent(jobId)}`);
 	return { json: job, pairedItem: { item: itemIndex } };
+}
+
+/**
+ * GET /api/v3/print/quota — how many agents, printers and jobs the plan allows,
+ * how many are used, and when today's job count resets.
+ */
+export async function getQuota(
+	this: IExecuteFunctions,
+	itemIndex: number,
+): Promise<INodeExecutionData> {
+	const quota = await labelZoomJsonRequest.call(this, 'GET', '/api/v3/print/quota');
+	return { json: quota, pairedItem: { item: itemIndex } };
 }
 
 /** GET /api/v3/printers/:id/status — is this printer ready, out of paper, offline? */

@@ -1,0 +1,30 @@
+{
+  "id": "request/source-cpcl",
+  "note": "B1: cpcl (Zebra mobile printers) sends Content-Type text/plain",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "cpcl",
+    "target": "zpl",
+    "bodyText": "! 0 200 200 210 1\nTEXT 4 0 30 40 hi\nPRINT\n"
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/cpcl/to/zpl",
+    "headers": {
+      "content-type": "text/plain",
+      "accept": "*/*"
+    },
+    "headersAbsent": [
+      "authorization"
+    ],
+    "headersMatch": {
+      "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+    },
+    "bodyText": "! 0 200 200 210 1\nTEXT 4 0 30 40 hi\nPRINT\n",
+    "queryAbsent": [
+      "params"
+    ]
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "id": "request/param-label-index",
+  "note": "C4: labelIndex is 0-BASED, like pdf.pageNumber, and travels at the top level of ?params= rather than under pdf: it counts labels, not pages, and a page can hold several. Zero must serialize, not be elided as a falsy default -- index 0 is the first label, and leaving it out asks for every label instead.",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "pdf",
+    "target": "zpl",
+    "bodyText": "%PDF-1.4",
+    "options": {
+      "labelIndex": 0,
+      "pdf": {
+        "pageNumber": 1
+      }
+    }
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/pdf/to/zpl",
+    "headers": {
+      "content-type": "application/pdf",
+      "accept": "*/*"
+    },
+    "headersAbsent": [
+      "authorization"
+    ],
+    "headersMatch": {
+      "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+    },
+    "bodyText": "%PDF-1.4",
+    "queryJson": {
+      "params": {
+        "labelIndex": 0,
+        "pdf": {
+          "pageNumber": 1
+        }
+      }
+    }
+  }
+}

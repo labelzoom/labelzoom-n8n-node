@@ -1,0 +1,21 @@
+{
+  "id": "print/validation-base64-text-not-printable",
+  "note": "P2: print reads the body as the format's own bytes, so a base64 text body can't be printed.",
+  "given": {
+    "client": {
+      "apiKey": "lz_test_print_key"
+    },
+    "operation": "print",
+    "printerId": "5b0e3c1a-8f2d-4c6e-9a7b-1d2e3f4a5b6c",
+    "source": "pdf",
+    "bodyText": "JVBERi0xLjQK",
+    "sourceEncoding": "base64text",
+    "responses": []
+  },
+  "expect": {
+    "validationError": {
+      "parameter": "source"
+    },
+    "requestsSent": 0
+  }
+}

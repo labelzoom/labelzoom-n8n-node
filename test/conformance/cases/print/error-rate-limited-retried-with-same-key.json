@@ -1,0 +1,48 @@
+{
+  "id": "print/error-rate-limited-retried-with-same-key",
+  "note": "P4/F2: an ordinary print 429 is retried like any other, and every attempt carries the same Idempotency-Key, so a retry can't print twice.",
+  "given": {
+    "client": {
+      "apiKey": "lz_test_print_key"
+    },
+    "operation": "print",
+    "printerId": "5b0e3c1a-8f2d-4c6e-9a7b-1d2e3f4a5b6c",
+    "source": "zpl",
+    "bodyText": "^XA^FO50,50^A0N,50,50^FDHello^FS^XZ",
+    "maxRetries": 2,
+    "responses": [
+      {
+        "status": 429,
+        "headers": {
+          "content-type": "application/json",
+          "retry-after": "1"
+        },
+        "bodyText": "{\"type\":\"about:blank\",\"title\":\"Too Many Requests\",\"status\":429,\"detail\":\"Too many print requests. Try again shortly.\",\"message\":\"Too many print requests. Try again shortly.\",\"code\":\"print_rate_limited\"}"
+      },
+      {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "bodyText": "{\"jobId\":\"9f1c7e2a-4b30-4d6e-8a11-5c2f9d4e7b83\",\"status\":\"dispatched\",\"copies\":null}"
+      }
+    ]
+  },
+  "expect": {
+    "attempts": 2,
+    "sleepsSeconds": [
+      1
+    ],
+    "sameHeaderAcrossAttempts": [
+      "idempotency-key"
+    ],
+    "result": {
+      "printJob": {
+        "jobId": "9f1c7e2a-4b30-4d6e-8a11-5c2f9d4e7b83",
+        "status": "dispatched",
+        "copies": null,
+        "idempotent": false
+      }
+    }
+  }
+}

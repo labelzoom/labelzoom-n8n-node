@@ -1,0 +1,30 @@
+{
+  "id": "request/source-ezpl",
+  "note": "B1: ezpl (GoDEX) sends Content-Type text/plain",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "ezpl",
+    "target": "zpl",
+    "bodyText": "^Q25,3\n^W50\n^L\nAA,20,20,1,1,0,0,hi\nE\n"
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/ezpl/to/zpl",
+    "headers": {
+      "content-type": "text/plain",
+      "accept": "*/*"
+    },
+    "headersAbsent": [
+      "authorization"
+    ],
+    "headersMatch": {
+      "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+    },
+    "bodyText": "^Q25,3\n^W50\n^L\nAA,20,20,1,1,0,0,hi\nE\n",
+    "queryAbsent": [
+      "params"
+    ]
+  }
+}

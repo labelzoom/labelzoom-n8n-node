@@ -1,0 +1,30 @@
+{
+  "id": "request/source-fingerprint",
+  "note": "B1: fingerprint (Honeywell and Intermec Fingerprint and Direct Protocol) sends Content-Type text/plain",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "fingerprint",
+    "target": "zpl",
+    "bodyText": "PP 20,20:PT \"hi\":PF"
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/fingerprint/to/zpl",
+    "headers": {
+      "content-type": "text/plain",
+      "accept": "*/*"
+    },
+    "headersAbsent": [
+      "authorization"
+    ],
+    "headersMatch": {
+      "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+    },
+    "bodyText": "PP 20,20:PT \"hi\":PF",
+    "queryAbsent": [
+      "params"
+    ]
+  }
+}

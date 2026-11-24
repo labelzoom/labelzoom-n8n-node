@@ -1,13 +1,22 @@
-import type { IExecuteFunctions, INodeExecutionData, INodeProperties, JsonObject } from 'n8n-workflow';
+import type {
+	IDataObject,
+	IExecuteFunctions,
+	INodeExecutionData,
+	INodeProperties,
+	JsonObject,
+} from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 
 import { labelZoomJsonRequest } from '../../shared/transport';
 import { resourceId } from '../../shared/utils';
+import { LabelZoomValidationError } from '../../shared/validation';
 import {
 	copiesField,
 	idempotencyKeyField,
+	normalizePrintJob,
 	printerLocator,
 	readCopies,
+	readIdempotencyKey,
 	templateLocator,
 } from './shared';
 
@@ -23,7 +32,7 @@ export const printTemplateDescription: INodeProperties[] = [
 		default: '{}',
 		required: true,
 		description:
-			"Values for the template's merge fields, keyed by field name. Map them from the incoming item.",
+			"Values for the template's merge fields, keyed by field name. Map them from the incoming item. An array of objects prints one label per entry as one batch, and the output then lists the jobs.",
 		displayOptions: { show: showFor },
 	},
 	{
@@ -47,13 +56,65 @@ export async function printTemplate(
 	const templateId = resourceId.call(this, 'templateId', itemIndex);
 	const copies = readCopies.call(this, itemIndex);
 	const validate = this.getNodeParameter('validate', itemIndex, true) as boolean;
-	const idempotencyKey = this.getNodeParameter('idempotencyKey', itemIndex, '') as string;
-	const rawMergeData = this.getNodeParameter('mergeData', itemIndex, '{}');
+	const idempotencyKey = readIdempotencyKey.call(this, itemIndex);
+	const records = readRecords.call(this, itemIndex);
 
-	let mergeData: unknown;
-	if (typeof rawMergeData === 'string') {
+	// Rule P3: one record is sent as that object, several as an array, and none
+	// as `{}`. Copies at its default of 1 is left off: the API treats copies=1
+	// exactly like no parameter.
+	const body: IDataObject | IDataObject[] =
+		records.length === 0 ? {} : records.length === 1 ? records[0] : records;
+	const query: Record<string, string> = {};
+	if (validate) query.validate = 'true';
+	if (copies !== 1) query.copies = String(copies);
+
+	// A batch sends one key; the server derives each entry's key from it, so the
+	// node must not (rule P4).
+	const response = await labelZoomJsonRequest.call(
+		this,
+		'POST',
+		`/api/v3/printers/${encodeURIComponent(printerId)}/templates/${encodeURIComponent(templateId)}/print`,
+		body,
+		Object.keys(query).length > 0 ? query : undefined,
+		{ 'Idempotency-Key': idempotencyKey },
+	);
+
+	// One record answers with a single job, and the output stays that job, as it
+	// always has. Several answer with a batch (rule P6): `remaining` counts the
+	// records at the end that were not submitted, which a resend of the same
+	// request with the same key submits.
+	if (Array.isArray(response.jobs)) {
+		return {
+			json: {
+				jobs: (response.jobs as JsonObject[]).map(normalizePrintJob),
+				remaining: typeof response.remaining === 'number' ? response.remaining : 0,
+				message: typeof response.message === 'string' ? response.message : null,
+				printerId,
+				templateId,
+			},
+			pairedItem: { item: itemIndex },
+		};
+	}
+
+	return {
+		json: { ...normalizePrintJob(response), printerId, templateId },
+		pairedItem: { item: itemIndex },
+	};
+}
+
+/**
+ * Parse Merge Data into its records. An object is one record and an array is
+ * one per entry; every entry must be an object, because a bare string or number
+ * has no field names to fill (rule P7, as C3 for convert).
+ */
+function readRecords(this: IExecuteFunctions, itemIndex: number): IDataObject[] {
+	const raw: unknown = this.getNodeParameter('mergeData', itemIndex, '{}');
+
+	let parsed: unknown = raw;
+	if (typeof raw === 'string') {
+		if (raw.trim() === '') return [];
 		try {
-			mergeData = JSON.parse(rawMergeData);
+			parsed = JSON.parse(raw);
 		} catch (error) {
 			throw new NodeOperationError(
 				this.getNode(),
@@ -61,46 +122,20 @@ export async function printTemplate(
 				{ itemIndex },
 			);
 		}
-	} else {
-		mergeData = rawMergeData;
 	}
 
-	// The endpoint accepts an array and then answers `{ jobs: [...] }` instead of a
-	// single job — a different response shape for the same operation. n8n already
-	// expresses "many" as many items, and one job per item keeps the idempotency
-	// key meaningful, so send a single object and let the item loop do the fan-out.
-	if (Array.isArray(mergeData)) {
-		throw new NodeOperationError(
-			this.getNode(),
-			'Merge Data must be a single JSON object, not an array',
-			{
-				itemIndex,
-				description:
-					'Send one item per label — this operation runs once per input item and each run produces one print job.',
-			},
-		);
+	const records = Array.isArray(parsed) ? parsed : [parsed];
+	for (const record of records) {
+		if (typeof record !== 'object' || record === null || Array.isArray(record)) {
+			throw new LabelZoomValidationError(
+				this.getNode(),
+				'data',
+				`Every entry in Merge Data must be a JSON object, got ${JSON.stringify(record)}`,
+				{ itemIndex },
+			);
+		}
 	}
-
-	// Copies at its default of 1 is left off: the API treats copies=1 exactly like
-	// no parameter, and the request stays what it was before the field existed.
-	const query: Record<string, string> = {};
-	if (validate) query.validate = 'true';
-	if (copies !== 1) query.copies = String(copies);
-
-	const headers: Record<string, string> = {};
-	if (idempotencyKey !== '') headers['Idempotency-Key'] = idempotencyKey;
-
-	const job = await labelZoomJsonRequest.call(
-		this,
-		'POST',
-		`/api/v3/printers/${encodeURIComponent(printerId)}/templates/${encodeURIComponent(templateId)}/print`,
-		mergeData as JsonObject,
-		Object.keys(query).length > 0 ? query : undefined,
-		headers,
-	);
-
-	return {
-		json: { ...job, printerId, templateId },
-		pairedItem: { item: itemIndex },
-	};
+	// `{}` is "no record": the template prints with its own defaults.
+	if (records.length === 1 && Object.keys(records[0] as IDataObject).length === 0) return [];
+	return records as IDataObject[];
 }

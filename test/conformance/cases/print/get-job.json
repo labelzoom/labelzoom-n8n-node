@@ -1,0 +1,52 @@
+{
+  "id": "print/get-job",
+  "note": "P5/P6: GET a job by id. The response is snake_case on the wire; each SDK exposes it in its own naming. Timestamps compare as instants, and unset ones are null.",
+  "given": {
+    "client": {
+      "apiKey": "lz_test_print_key"
+    },
+    "operation": "getJob",
+    "jobId": "9f1c7e2a-4b30-4d6e-8a11-5c2f9d4e7b83",
+    "responses": [
+      {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "bodyText": "{\"id\":\"9f1c7e2a-4b30-4d6e-8a11-5c2f9d4e7b83\",\"printer_id\":\"5b0e3c1a-8f2d-4c6e-9a7b-1d2e3f4a5b6c\",\"agent_id\":\"2a3b4c5d-6e7f-4a8b-9c0d-1e2f3a4b5c6d\",\"source_format\":\"zpl\",\"copies\":null,\"status\":\"completed\",\"error\":null,\"retry_count\":0,\"created_date\":\"2026-10-11T15:00:00.000Z\",\"dispatched_date\":\"2026-10-11T15:00:01.000Z\",\"completed_date\":\"2026-10-11T15:00:02.000Z\",\"retried_date\":null}"
+      }
+    ]
+  },
+  "expect": {
+    "request": {
+      "method": "GET",
+      "path": "/api/v3/jobs/9f1c7e2a-4b30-4d6e-8a11-5c2f9d4e7b83",
+      "headers": {
+        "accept": "application/json",
+        "authorization": "Bearer lz_test_print_key"
+      },
+      "headersAbsent": [
+        "idempotency-key"
+      ],
+      "headersMatch": {
+        "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+      }
+    },
+    "result": {
+      "job": {
+        "id": "9f1c7e2a-4b30-4d6e-8a11-5c2f9d4e7b83",
+        "printerId": "5b0e3c1a-8f2d-4c6e-9a7b-1d2e3f4a5b6c",
+        "agentId": "2a3b4c5d-6e7f-4a8b-9c0d-1e2f3a4b5c6d",
+        "sourceFormat": "zpl",
+        "copies": null,
+        "status": "completed",
+        "error": null,
+        "retryCount": 0,
+        "createdDate": "2026-10-11T15:00:00Z",
+        "dispatchedDate": "2026-10-11T15:00:01Z",
+        "completedDate": "2026-10-11T15:00:02Z",
+        "retriedDate": null
+      }
+    }
+  }
+}

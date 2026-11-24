@@ -1,0 +1,30 @@
+{
+  "id": "request/source-nlbl",
+  "note": "B1: nlbl (a NiceLabel or ZebraDesigner 3 file) is binary and sends Content-Type application/octet-stream",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "nlbl",
+    "target": "zpl",
+    "bodyText": "PK-nlbl"
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/nlbl/to/zpl",
+    "headers": {
+      "content-type": "application/octet-stream",
+      "accept": "*/*"
+    },
+    "headersAbsent": [
+      "authorization"
+    ],
+    "headersMatch": {
+      "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+    },
+    "bodyText": "PK-nlbl",
+    "queryAbsent": [
+      "params"
+    ]
+  }
+}

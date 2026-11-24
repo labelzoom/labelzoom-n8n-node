@@ -9,7 +9,7 @@
     "target": "zpl",
     "bodyText": "%PDF-1.4",
     "options": {
-      "dpi": 300,
+      "targetDpi": 300,
       "rotation": 180,
       "scaling": 75.0,
       "colorMode": "GRAYSCALE",
@@ -32,13 +32,31 @@
           "^PQ",
           "^MD"
         ],
-        "imageCompression": "Z64"
+        "imageCompression": "Z64",
+        "collapseCopies": true
       },
       "data": [
         {
           "sku": "1234"
         }
-      ]
+      ],
+      "labelIndex": 1,
+      "layout": {
+        "across": 2,
+        "gap": 0.1,
+        "fill": "SEQUENTIAL"
+      },
+      "split": {
+        "rows": 2,
+        "columns": 1,
+        "width": 4.0,
+        "height": 5.0,
+        "left": 0.25,
+        "top": 0.25,
+        "columnGap": 0.0,
+        "rowGap": 0.5,
+        "skipBlank": false
+      }
     }
   },
   "expect": {
@@ -50,7 +68,7 @@
     },
     "queryJson": {
       "params": {
-        "dpi": 300,
+        "targetDpi": 300,
         "rotation": 180,
         "scaling": 75.0,
         "colorMode": "GRAYSCALE",
@@ -73,13 +91,31 @@
             "^PQ",
             "^MD"
           ],
-          "imageCompression": "Z64"
+          "imageCompression": "Z64",
+          "collapseCopies": true
         },
         "data": [
           {
             "sku": "1234"
           }
-        ]
+        ],
+        "labelIndex": 1,
+        "layout": {
+          "across": 2,
+          "gap": 0.1,
+          "fill": "SEQUENTIAL"
+        },
+        "split": {
+          "rows": 2,
+          "columns": 1,
+          "width": 4.0,
+          "height": 5.0,
+          "left": 0.25,
+          "top": 0.25,
+          "columnGap": 0.0,
+          "rowGap": 0.5,
+          "skipBlank": false
+        }
       }
     }
   }

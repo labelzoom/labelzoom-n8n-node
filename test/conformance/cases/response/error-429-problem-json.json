@@ -1,0 +1,20 @@
+{
+  "id": "response/error-429-problem-json",
+  "note": "E2/E3 over the problem+json 429: the body now carries 'message' (and keeps 'error' for older readers), so step 1 applies and the message is the text, not the raw body. Compare response/error-429-retry-after, the older {error} shape, which still falls through and stays because older servers still send it.",
+  "given": {
+    "status": 429,
+    "headers": {
+      "content-type": "application/problem+json",
+      "retry-after": "60"
+    },
+    "bodyText": "{\"type\":\"about:blank\",\"title\":\"Too Many Requests\",\"status\":429,\"detail\":\"Too many requests. Please try again later.\",\"instance\":\"/api/v2/convert/zpl/to/png\",\"message\":\"Too many requests. Please try again later.\",\"error\":\"Too many requests. Please try again later.\"}"
+  },
+  "expect": {
+    "error": {
+      "kind": "RateLimited",
+      "status": 429,
+      "retryAfterSeconds": 60,
+      "message": "Too many requests. Please try again later."
+    }
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "id": "print/document-source-options",
+  "note": "P2/C2: source options travel in the one params object, exactly as they do for convert. Print has no target stage, so no target option can appear.",
+  "given": {
+    "client": {
+      "apiKey": "lz_test_print_key"
+    },
+    "operation": "print",
+    "printerId": "5b0e3c1a-8f2d-4c6e-9a7b-1d2e3f4a5b6c",
+    "source": "pdf",
+    "bodyText": "^XA^FO50,50^A0N,50,50^FDHello^FS^XZ",
+    "options": {
+      "pdf": {
+        "pageNumber": 0
+      },
+      "split": {
+        "rows": 2,
+        "columns": 2
+      },
+      "label": {
+        "width": 4.0,
+        "height": 6.0
+      }
+    },
+    "responses": [
+      {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "bodyText": "{\"jobId\":\"9f1c7e2a-4b30-4d6e-8a11-5c2f9d4e7b83\",\"status\":\"dispatched\",\"copies\":null}"
+      }
+    ]
+  },
+  "expect": {
+    "request": {
+      "method": "POST",
+      "path": "/api/v3/printers/5b0e3c1a-8f2d-4c6e-9a7b-1d2e3f4a5b6c/print",
+      "headers": {
+        "content-type": "application/pdf",
+        "accept": "application/json"
+      },
+      "headersMatch": {
+        "user-agent": "^labelzoom-[a-z0-9]+-sdk/",
+        "idempotency-key": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+      },
+      "query": {
+        "sourceFormat": "pdf"
+      },
+      "queryAbsent": [
+        "copies"
+      ],
+      "bodyText": "^XA^FO50,50^A0N,50,50^FDHello^FS^XZ",
+      "queryJson": {
+        "params": {
+          "pdf": {
+            "pageNumber": 0
+          },
+          "split": {
+            "rows": 2,
+            "columns": 2
+          },
+          "label": {
+            "width": 4.0,
+            "height": 6.0
+          }
+        }
+      }
+    },
+    "result": {
+      "printJob": {
+        "jobId": "9f1c7e2a-4b30-4d6e-8a11-5c2f9d4e7b83",
+        "status": "dispatched",
+        "copies": null,
+        "idempotent": false
+      }
+    }
+  }
+}

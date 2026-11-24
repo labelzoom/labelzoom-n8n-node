@@ -1,0 +1,28 @@
+{
+  "id": "print/error-not-found-has-no-code",
+  "note": "E3: an error body without a code leaves code null rather than failing.",
+  "given": {
+    "client": {
+      "apiKey": "lz_test_print_key"
+    },
+    "operation": "getJob",
+    "jobId": "9f1c7e2a-4b30-4d6e-8a11-5c2f9d4e7b83",
+    "responses": [
+      {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "bodyText": "{\"message\":\"Job not found\"}"
+      }
+    ]
+  },
+  "expect": {
+    "error": {
+      "kind": "NotFound",
+      "status": 404,
+      "code": null,
+      "message": "Job not found"
+    }
+  }
+}

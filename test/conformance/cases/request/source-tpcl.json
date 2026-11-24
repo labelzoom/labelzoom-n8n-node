@@ -1,0 +1,30 @@
+{
+  "id": "request/source-tpcl",
+  "note": "B1: tpcl (Toshiba TEC) sends Content-Type text/plain",
+  "given": {
+    "client": {
+      "apiKey": null
+    },
+    "source": "tpcl",
+    "target": "zpl",
+    "bodyText": "{D0500,0800,0450|}\n{PC000;0020,0020,1,1,J,00,B=hi|}\n{XS;I,0001,0002C3100|}\n"
+  },
+  "expect": {
+    "method": "POST",
+    "path": "/api/v2/convert/tpcl/to/zpl",
+    "headers": {
+      "content-type": "text/plain",
+      "accept": "*/*"
+    },
+    "headersAbsent": [
+      "authorization"
+    ],
+    "headersMatch": {
+      "user-agent": "^labelzoom-[a-z0-9]+-sdk/"
+    },
+    "bodyText": "{D0500,0800,0450|}\n{PC000;0020,0020,1,1,J,00,B=hi|}\n{XS;I,0001,0002C3100|}\n",
+    "queryAbsent": [
+      "params"
+    ]
+  }
+}

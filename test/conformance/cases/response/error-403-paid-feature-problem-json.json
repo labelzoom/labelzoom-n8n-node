@@ -1,0 +1,19 @@
+{
+  "id": "response/error-403-paid-feature-problem-json",
+  "note": "E5 over the problem+json body: the paid-feature flag is read from 'message', which the problem document keeps.",
+  "given": {
+    "status": 403,
+    "headers": {
+      "content-type": "application/problem+json"
+    },
+    "bodyText": "{\"type\":\"about:blank\",\"title\":\"Forbidden\",\"status\":403,\"detail\":\"JSON export is a paid feature\",\"instance\":\"/api/v2/convert/zpl/to/json\",\"message\":\"JSON export is a paid feature\"}"
+  },
+  "expect": {
+    "error": {
+      "kind": "Forbidden",
+      "status": 403,
+      "message": "JSON export is a paid feature",
+      "isPaidFeature": true
+    }
+  }
+}

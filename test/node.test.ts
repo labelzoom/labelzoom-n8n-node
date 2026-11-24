@@ -45,7 +45,8 @@ describe('binary safety', () => {
 		for (const format of ['epl', 'ipl', 'tspl', 'dpl', 'sbpl']) {
 			expect(isTextualTarget(format), format).toBe(false);
 		}
-		for (const format of ['zpl', 'xml', 'json']) {
+		// CPCL writes graphics as EG hex, so its output stays printable text.
+		for (const format of ['zpl', 'cpcl', 'xml', 'json']) {
 			expect(isTextualTarget(format), format).toBe(true);
 		}
 	});
@@ -201,13 +202,98 @@ describe('printer: print template', () => {
 		expect(result.json).toMatchObject({ jobId: 'job-2', templateId: 'template-1' });
 	});
 
-	it('rejects an array, because the response shape would change with it', async () => {
+	it('sends several records as one batch with one key, and outputs the jobs', async () => {
+		const { ctx, requests } = makeHarness({
+			parameters: templateParameters({
+				mergeData: '[{"orderNumber":"1001"},{"orderNumber":"1002"}]',
+				idempotencyKey: 'SO-BATCH-1',
+			}),
+			credentials: KEY,
+			responses: [
+				{
+					status: 202,
+					headers: { 'content-type': 'application/json' },
+					bodyText:
+						'{"jobs":[{"jobId":"job-2","status":"queued"}],"remaining":1,"message":"Resubmit the remaining 1."}',
+				},
+			],
+		});
+		const result = await printTemplate.call(ctx, 0);
+
+		expect(JSON.parse(requests[0].bodyText)).toEqual([{ orderNumber: '1001' }, { orderNumber: '1002' }]);
+		// The server derives each entry's key from this one; the node must not.
+		expect(requests[0].headers['idempotency-key']).toBe('SO-BATCH-1');
+		expect(result.json).toEqual({
+			jobs: [{ jobId: 'job-2', status: 'queued', copies: null, idempotent: false }],
+			remaining: 1,
+			message: 'Resubmit the remaining 1.',
+			printerId: 'printer-1',
+			templateId: 'template-1',
+		});
+	});
+
+	it('sends a one-record array as that record, and outputs the job', async () => {
 		const { ctx, requests } = makeHarness({
 			parameters: templateParameters({ mergeData: '[{"orderNumber":"1001"}]' }),
 			credentials: KEY,
+			responses: [{ status: 202, headers: { 'content-type': 'application/json' }, bodyText: '{"jobId":"job-2","status":"queued"}' }],
+		});
+		const result = await printTemplate.call(ctx, 0);
+
+		expect(JSON.parse(requests[0].bodyText)).toEqual({ orderNumber: '1001' });
+		expect(result.json).toMatchObject({ jobId: 'job-2', copies: null, idempotent: false });
+	});
+
+	it('rejects a record that is not an object, before sending anything', async () => {
+		const { ctx, requests } = makeHarness({
+			parameters: templateParameters({ mergeData: '"1001"' }),
+			credentials: KEY,
 			responses: [],
 		});
-		await expect(printTemplate.call(ctx, 0)).rejects.toThrow(/single JSON object/);
+		await expect(printTemplate.call(ctx, 0)).rejects.toThrow(/must be a JSON object/);
+		expect(requests).toHaveLength(0);
+	});
+});
+
+describe('printer: idempotency key', () => {
+	const parameters = (idempotencyKey: string) => ({
+		printerId: { mode: 'id', value: 'printer-1' },
+		sourceFormat: 'zpl',
+		inputType: 'text',
+		labelContent: '^XA^XZ',
+		copies: 1,
+		idempotencyKey,
+		waitForCompletion: false,
+		options: {},
+	});
+
+	it('generates a key when the field is empty, and reuses it on a retry', async () => {
+		const { ctx, requests } = makeHarness({
+			parameters: parameters(''),
+			credentials: { ...KEY, maxRetries: 1 },
+			responses: [{ status: 503, bodyText: 'Service Unavailable' }, JOB_ACCEPTED],
+		});
+		await print.call(ctx, 0);
+
+		const keys = requests.map((request) => request.headers['idempotency-key']);
+		expect(keys[0]).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+		expect(keys[1]).toBe(keys[0]);
+	});
+
+	it('generates a fresh key for each item', async () => {
+		const first = makeHarness({ parameters: parameters(''), credentials: KEY, responses: [JOB_ACCEPTED] });
+		const second = makeHarness({ parameters: parameters(''), credentials: KEY, responses: [JOB_ACCEPTED] });
+		await print.call(first.ctx, 0);
+		await print.call(second.ctx, 0);
+
+		expect(first.requests[0].headers['idempotency-key']).not.toBe(
+			second.requests[0].headers['idempotency-key'],
+		);
+	});
+
+	it('refuses a key that is only whitespace, because it is almost always an empty expression', async () => {
+		const { ctx, requests } = makeHarness({ parameters: parameters('   '), credentials: KEY, responses: [] });
+		await expect(print.call(ctx, 0)).rejects.toThrow(/Idempotency Key is blank/);
 		expect(requests).toHaveLength(0);
 	});
 });
@@ -380,6 +466,71 @@ describe('printer: copies', () => {
 	});
 });
 
+describe('node versions', () => {
+	const description = new LabelZoom().description;
+	const conversionOptions = (operation: string) =>
+		(
+			description.properties.find(
+				(p) => p.name === 'options' && p.displayOptions?.show?.operation?.includes(operation),
+			)?.options ?? []
+		) as Array<{ name: string; displayOptions?: { show?: Record<string, unknown> } }>;
+
+	it('adds version 2 and makes it the default for new nodes', () => {
+		expect(description.version).toEqual([1, 2]);
+		expect(description.defaultVersion).toBe(2);
+	});
+
+	it('offers DPI on version 1 only, and Source DPI and Target DPI on version 2', () => {
+		for (const operation of ['convert', 'print']) {
+			const byName = new Map(conversionOptions(operation).map((o) => [o.name, o]));
+			expect(byName.get('dpi')?.displayOptions?.show?.['@version']).toEqual([1]);
+			for (const name of ['sourceDpi', 'targetDpi']) {
+				expect(byName.get(name)?.displayOptions?.show?.['@version'], `${operation} ${name}`).toEqual([
+					{ _cnd: { gte: 2 } },
+				]);
+			}
+		}
+	});
+
+	it('still sends a saved version 1 workflow’s DPI exactly as before', async () => {
+		const { ctx, requests } = makeHarness({
+			parameters: {
+				sourceFormat: 'pdf',
+				targetFormat: 'zpl',
+				inputType: 'text',
+				labelContent: '%PDF-1.4',
+				outputBinaryPropertyName: 'data',
+				options: { dpi: 300 },
+			},
+			responses: [{ status: 200, headers: { 'content-type': 'text/plain' }, bodyText: '^XA^XZ' }],
+		});
+		await convert.call(ctx, 0);
+
+		expect(JSON.parse(requests[0].url.searchParams.get('params') as string)).toEqual({ dpi: 300 });
+	});
+});
+
+describe('formats', () => {
+	it('lists every source and target the API converts', () => {
+		const properties = new LabelZoom().description.properties;
+		const values = (name: string, operation: string) =>
+			(
+				properties.find(
+					(p) => p.name === name && p.displayOptions?.show?.operation?.includes(operation),
+				)?.options as Array<{ value: string }>
+			).map((o) => o.value);
+
+		for (const format of ['esclabel', 'fingerprint', 'ezpl', 'cpcl', 'tpcl', 'nlbl', 'lbl', 'btw', 'dymo']) {
+			expect(values('sourceFormat', 'convert'), format).toContain(format);
+			expect(values('sourceFormat', 'print'), format).toContain(format);
+		}
+		expect(values('targetFormat', 'convert')).toContain('cpcl');
+		// A URL can be converted, never printed.
+		expect(values('sourceFormat', 'convert')).toContain('url');
+		expect(values('sourceFormat', 'print')).not.toContain('url');
+	});
+});
+
 describe('dropdowns', () => {
 	it('labels printers with their native format and status', async () => {
 		const { ctx } = makeHarness({
@@ -507,19 +658,44 @@ describe('print input modes', () => {
 		options: {},
 	};
 
-	it('sends base64 input as text/plain, not the source format’s media type', async () => {
-		// The Print operation offers the same "Base64 Text" mode as Convert. Sending
-		// a base64 string labeled application/pdf produces a 502 on the way to the
-		// printer, or garbage at the printer itself.
+	it('refuses base64 input before sending anything', async () => {
+		// Print reads the body as the file itself, under the source format's own
+		// media type, so a base64 string reaches the printer as base64 characters.
+		// A workflow saved while the mode was offered still lands here.
 		const { ctx, requests } = makeHarness({
 			parameters: { ...base, sourceFormat: 'pdf', inputType: 'base64', labelContent: 'JVBERi0xLjQK' },
 			credentials: KEY,
 			responses: [JOB_ACCEPTED],
 		});
+		await expect(print.call(ctx, 0)).rejects.toThrow(/Base64 text cannot be printed/);
+		expect(requests).toHaveLength(0);
+	});
+
+	it('no longer offers base64 input, while Convert still does', () => {
+		const properties = new LabelZoom().description.properties;
+		const inputTypes = (operation: string) =>
+			(
+				properties.find(
+					(p) => p.name === 'inputType' && p.displayOptions?.show?.operation?.includes(operation),
+				)?.options as Array<{ value: string }>
+			).map((o) => o.value);
+
+		expect(inputTypes('print')).not.toContain('base64');
+		expect(inputTypes('convert')).toContain('base64');
+	});
+
+	it('sends a design file as raw bytes under application/octet-stream', async () => {
+		const bytes = Buffer.from([0x00, 0xff, 0x42, 0x54, 0xc3]);
+		const { ctx, requests, } = makeHarness({
+			parameters: { ...base, sourceFormat: 'btw', inputType: 'binary', binaryPropertyName: 'data' },
+			credentials: KEY,
+			binary: { data: { data: bytes } },
+			responses: [JOB_ACCEPTED],
+		});
 		await print.call(ctx, 0);
 
-		expect(requests[0].headers['content-type']).toBe('text/plain');
-		expect(requests[0].bodyText).toBe('JVBERi0xLjQK');
+		expect(requests[0].headers['content-type']).toBe('application/octet-stream');
+		expect(requests[0].url.searchParams.get('sourceFormat')).toBe('btw');
 	});
 
 	it('still sends the source format’s media type for a real file', async () => {

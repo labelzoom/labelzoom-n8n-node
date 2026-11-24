@@ -13,20 +13,56 @@ import type { ConversionOptions } from '../../shared/options';
 import { serializeConversionParams } from '../../shared/options';
 import { labelZoomJsonRequest, labelZoomRequest, requestIdOf } from '../../shared/transport';
 import { readDocument, resourceId } from '../../shared/utils';
+import { LabelZoomValidationError } from '../../shared/validation';
 import {
 	TERMINAL_JOB_STATUSES,
 	copiesField,
 	idempotencyKeyField,
+	normalizePrintJob,
 	printerLocator,
 	readCopies,
+	readIdempotencyKey,
 } from './shared';
 
 const showFor = { resource: ['printer'], operation: ['print'] };
 
-function resolveContentType(inputType: string, sourceFormat: string): string {
-	if (inputType === 'base64') return 'text/plain';
+function resolveContentType(sourceFormat: string): string {
 	if (sourceFormat === '') return 'application/octet-stream';
 	return sourceMediaType(sourceWireToken(sourceFormat));
+}
+
+/**
+ * Rule P2: every source prints except two, refused before anything is sent.
+ * A URL, because print never fetches; and base64 text, because print reads the
+ * body as the format's own bytes, so the printer would get the base64 characters.
+ * Neither is offered in the UI, but a workflow saved before that, or a value set
+ * by expression, still reaches here.
+ */
+function assertPrintable(
+	this: IExecuteFunctions,
+	sourceFormat: string,
+	inputType: string,
+	itemIndex: number,
+): void {
+	if (sourceFormat === 'url') {
+		throw new LabelZoomValidationError(this.getNode(), 'source', 'A URL source cannot be printed', {
+			itemIndex,
+			description:
+				'Print sends the document itself. Fetch the file with an HTTP Request node, then print it as a binary file.',
+		});
+	}
+	if (inputType === 'base64') {
+		throw new LabelZoomValidationError(
+			this.getNode(),
+			'source',
+			'Base64 text cannot be printed',
+			{
+				itemIndex,
+				description:
+					'Print reads the document as the file itself. Turn the base64 into a file with the Convert to File node, then set Input Type to Binary File.',
+			},
+		);
+	}
 }
 
 export const printDescription: INodeProperties[] = [
@@ -46,10 +82,10 @@ export const printDescription: INodeProperties[] = [
 		],
 		default: '',
 		description:
-			'The format of the document you are sending. LabelZoom converts it to the printer\'s native format on the way — a PDF sent to a ZPL printer becomes ZPL automatically.',
+			'The format of the document you are sending. LabelZoom converts it to the printer\'s native format on the way — a PDF sent to a ZPL printer becomes ZPL automatically. Auto-Detect recognizes PDFs and images only: choose the format for anything else, or the document is sent to the printer as is.',
 		displayOptions: { show: showFor },
 	},
-	...documentInputFields(showFor),
+	...documentInputFields(showFor, { allowBase64: false }),
 	copiesField(showFor),
 	idempotencyKeyField(showFor),
 	{
@@ -113,16 +149,13 @@ export async function print(
 	const printerId = resourceId.call(this, 'printerId', itemIndex);
 	const copies = readCopies.call(this, itemIndex);
 	const sourceFormat = this.getNodeParameter('sourceFormat', itemIndex, '') as string;
-	const idempotencyKey = this.getNodeParameter('idempotencyKey', itemIndex, '') as string;
+	const inputType = this.getNodeParameter('inputType', itemIndex) as string;
+	assertPrintable.call(this, sourceFormat, inputType, itemIndex);
+	const idempotencyKey = readIdempotencyKey.call(this, itemIndex);
 	const waitForCompletion = this.getNodeParameter('waitForCompletion', itemIndex, false) as boolean;
 	const options = this.getNodeParameter('options', itemIndex, {}) as ConversionOptions;
 
 	const document = await readDocument.call(this, itemIndex);
-
-	// Base64/text mode travels as text/plain whatever the source format is — the
-	// same rule Convert follows. Without this, choosing "Base64 Text" here would
-	// label a base64 string as application/pdf and the printer would get garbage.
-	const inputType = this.getNodeParameter('inputType', itemIndex) as string;
 
 	// `sourceFormat` and `copies` are the query parameters the print endpoint
 	// consumes itself; everything in `params` is forwarded verbatim to the
@@ -130,12 +163,16 @@ export async function print(
 	// change happens. Copies at its default of 1 is left off: the API treats
 	// copies=1 exactly like no parameter, and the request stays what it was before
 	// the field existed.
+	//
+	// `sourceFormat` goes out as its wire token (rule A2): `jpg` is sent as `jpeg`.
+	// It is left off only for Auto-Detect, where the server recognizes a PDF or
+	// image from its bytes and sends anything else to the printer unconverted.
 	const query: Record<string, string> = {};
-	if (sourceFormat !== '') query.sourceFormat = sourceFormat;
+	if (sourceFormat !== '') query.sourceFormat = sourceWireToken(sourceFormat);
 	if (copies !== 1) query.copies = String(copies);
 
-	const headers: Record<string, string> = {};
-	if (idempotencyKey !== '') headers['Idempotency-Key'] = idempotencyKey;
+	// One key per item, reused by every retry the transport makes (rule P4).
+	const headers: Record<string, string> = { 'Idempotency-Key': idempotencyKey };
 
 	const response = await labelZoomRequest.call(this, {
 		method: 'POST',
@@ -143,8 +180,9 @@ export async function print(
 		query: Object.keys(query).length > 0 ? query : undefined,
 		params: serializeConversionParams(this.getNode(), options),
 		body: document,
-		contentType: resolveContentType(inputType, sourceFormat),
+		contentType: resolveContentType(sourceFormat),
 		headers,
+		accept: 'application/json',
 		requireAuth: true,
 	});
 
@@ -165,7 +203,7 @@ export async function print(
 	}
 
 	const json: IDataObject = {
-		...job,
+		...normalizePrintJob(job),
 		printerId,
 		requestId: requestIdOf(response),
 	};

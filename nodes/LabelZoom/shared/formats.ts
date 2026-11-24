@@ -14,6 +14,15 @@ export const SOURCE_FORMATS = [
 	'tspl',
 	'dpl',
 	'sbpl',
+	'esclabel',
+	'fingerprint',
+	'ezpl',
+	'cpcl',
+	'tpcl',
+	'nlbl',
+	'lbl',
+	'btw',
+	'dymo',
 	'xml',
 	'json',
 	'pdf',
@@ -32,6 +41,7 @@ export const TARGET_FORMATS = [
 	'tspl',
 	'dpl',
 	'sbpl',
+	'cpcl',
 	'xml',
 	'json',
 	'pdf',
@@ -52,6 +62,18 @@ const SOURCE_MEDIA_TYPES: Record<SourceFormat, string> = {
 	tspl: 'text/plain',
 	dpl: 'text/plain',
 	sbpl: 'text/plain',
+	esclabel: 'text/plain',
+	fingerprint: 'text/plain',
+	ezpl: 'text/plain',
+	cpcl: 'text/plain',
+	tpcl: 'text/plain',
+	// NiceLabel and BarTender design files are binary. Sent as text/plain, the
+	// server would read the body as base64 text and fail to decode it.
+	nlbl: 'application/octet-stream',
+	lbl: 'application/octet-stream',
+	btw: 'application/octet-stream',
+	// A DYMO design file is XML, but not LBXML: the format token tells them apart.
+	dymo: 'application/xml',
 	xml: 'application/xml',
 	json: 'application/json',
 	pdf: 'application/pdf',
@@ -71,6 +93,7 @@ const TARGET_MEDIA_TYPES: Record<TargetFormat, string> = {
 	tspl: 'text/plain',
 	dpl: 'text/plain',
 	sbpl: 'text/plain',
+	cpcl: 'text/plain',
 	xml: 'application/xml',
 	json: 'application/json',
 	pdf: 'application/pdf',
@@ -87,6 +110,7 @@ const TARGET_EXTENSIONS: Record<TargetFormat, string> = {
 	tspl: 'txt',
 	dpl: 'dpl',
 	sbpl: 'sbpl',
+	cpcl: 'cpcl',
 	xml: 'xml',
 	json: 'json',
 	pdf: 'pdf',
@@ -104,9 +128,10 @@ const TARGET_EXTENSIONS: Record<TargetFormat, string> = {
  * 1-bpp image payload, IPL frames commands in STX/ETX and packs bitmap columns,
  * DPL output opens with a literal STX (0x02), and SBPL prefixes every command with
  * ESC. Decoding those to a string corrupts every label that carries graphics, so
- * the node only ever hands them onward as binary.
+ * the node only ever hands them onward as binary. CPCL is textual: its writer
+ * emits graphics as `EG` hex, so the output stays printable ASCII.
  */
-const TEXTUAL_TARGETS = new Set<TargetFormat>(['zpl', 'xml', 'json']);
+const TEXTUAL_TARGETS = new Set<TargetFormat>(['zpl', 'cpcl', 'xml', 'json']);
 
 export function sourceMediaType(format: string): string {
 	return SOURCE_MEDIA_TYPES[format as SourceFormat] ?? 'application/octet-stream';
@@ -137,6 +162,15 @@ const FORMAT_LABELS: Record<string, string> = {
 	tspl: 'TSPL (TSC)',
 	dpl: 'DPL (Datamax)',
 	sbpl: 'SBPL (SATO)',
+	esclabel: 'ESC/Label (Epson ColorWorks)',
+	fingerprint: 'Fingerprint (Honeywell)',
+	ezpl: 'EZPL (GoDEX)',
+	cpcl: 'CPCL (Zebra Mobile)',
+	tpcl: 'TPCL (Toshiba TEC)',
+	nlbl: 'NiceLabel (.nlbl)',
+	lbl: 'NiceLabel (.lbl)',
+	btw: 'BarTender (.btw)',
+	dymo: 'DYMO (.label)',
 	xml: 'XML (LBXML)',
 	json: 'JSON (LabelZoom)',
 	pdf: 'PDF',

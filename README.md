@@ -1,8 +1,8 @@
 # n8n-nodes-labelzoom
 
 An [n8n](https://n8n.io) community node for [LabelZoom](https://www.labelzoom.com) — convert
-barcode labels between ZPL, EPL, IPL, TSPL, DPL, SBPL, PDF, images and XML/JSON, and print them to
-cloud-connected thermal printers.
+barcode labels between printer languages, label design files, PDF, images and XML/JSON, and print
+them to cloud-connected thermal printers.
 
 The labels in a business rarely arrive in the format the printer wants. A WMS emits ZPL, a
 carrier hands you a PDF, an old Eltron on the packing bench speaks EPL. This node turns that
@@ -56,29 +56,50 @@ you're ready to ship.
 | **Convert** | Convert a document between any supported source and target format |
 | **Convert Template** | Fill a Print Template with data and render it, without printing |
 
-Sources: `zpl` `epl` `ipl` `tspl` `dpl` `sbpl` `xml` `json` `pdf` `png` `bmp` `gif` `jpeg` `jpg` `url`
-Targets: `zpl` `epl` `ipl` `tspl` `dpl` `sbpl` `xml` `json` `pdf` `png` `bmp` `gif` `jpeg`
+| Kind | Sources | Targets |
+| --- | --- | --- |
+| Printer languages | `zpl` `epl` `ipl` `tspl` `dpl` `sbpl` `cpcl` `esclabel` `fingerprint` `ezpl` `tpcl` | `zpl` `epl` `ipl` `tspl` `dpl` `sbpl` `cpcl` |
+| Label design files | `nlbl` `lbl` (NiceLabel), `btw` (BarTender), `dymo` (DYMO) | — |
+| Documents and images | `pdf` `png` `bmp` `gif` `jpeg` `jpg` | `pdf` `png` `bmp` `gif` `jpeg` |
+| LabelZoom | `xml` `json` | `xml` `json` |
+| Other | `url` | — |
 
 `url` is a source only — post a link and LabelZoom fetches the document itself. `jpg` is an
-input spelling that normalizes to `jpeg`.
+input spelling that normalizes to `jpeg`. NiceLabel and BarTender files are binary: attach them as
+a binary file.
 
-The output is always a **binary field**, because five of the thirteen targets are binary. A
-decoded `text` field is added for `zpl`, `xml` and `json` as a convenience. It is deliberately
+The output is always a **binary field**, because five of the fourteen targets are binary. A
+decoded `text` field is added for `zpl`, `cpcl`, `xml` and `json` as a convenience. It is deliberately
 *not* added for `epl`, `ipl`, `tspl`, `dpl` or `sbpl`: those come back as `text/plain` but can
 inline raw bytes (EPL's `GW`, IPL's `STX`/`ETX` framing, TSPL's `BITMAP`, DPL's leading `STX`,
 SBPL's `ESC`-prefixed commands), and decoding them to a string would corrupt any label carrying
 graphics.
 
-Options cover the full parameter set — DPI, rotation, scaling, color mode, darkness, label
-size in inches, position, PDF conversion mode and page number, ZPL image compression and
-commands to ignore, and a **Variable Data** field that fills placeholders on the label (one
-output label per array entry). Anything not yet surfaced in the UI can go through **Custom
-Parameters (JSON)**.
+Options cover the full parameter set — Source DPI and Target DPI, rotation, scaling, color mode,
+darkness, label size in inches, position, PDF conversion mode and page number, label index, ZPL
+image compression, commands to ignore and collapsing identical labels, and a **Variable Data**
+field that fills placeholders on the label (one output label per array entry). Anything not yet
+surfaced in the UI can go through **Custom Parameters (JSON)**.
+
+| Option | What it does |
+| --- | --- |
+| **Source DPI** | The resolution the label code or image was made for. Printer-language and image sources only; when **Target DPI** is unset, the output follows it |
+| **Target DPI** | The resolution of the output. Every target except PDF |
+| **Label Index** | Convert one label of a multi-label document, counting from 0 |
+| **Split Page Into Labels** | Cut each page of a PDF or image into a grid of labels, such as a sheet of address labels. Lengths are in inches |
+| **Layout** | Put several labels side by side on a multi-across roll (ZPL output) |
+| **Collapse Identical Labels** | Write each run of identical labels as one ZPL label with a `^PQ` count |
+
+Split, layout and collapsing need **PDF Conversion Mode** set to **Image**, the default.
+
+Workflows saved with an earlier version of the node keep their single **DPI** option and send
+the request they always sent. A LabelZoom node added to a workflow now offers **Source DPI** and
+**Target DPI** in its place.
 
 ### Printer
 
-> **Cloud Print is in private beta.** Endpoints and payloads may change.
-> [Apply for access](https://www.labelzoom.com/beta).
+> **Cloud Print is in public beta.** Endpoints and payloads may change.
+> [Set up a printer](https://www.labelzoom.com/cloud-print).
 
 | Operation | What it does |
 | --- | --- |
@@ -87,10 +108,23 @@ Parameters (JSON)**.
 | **Get Job** | Look up a print job to see whether it actually printed |
 | **Get Many** | List the printers on your account |
 | **Get Status** | One printer's live status and its bound agents |
+| **Get Print Quota** | Your plan's agent, printer and daily job limits, what's used, and when the daily count resets |
 
 Printing sends the document as-is; if it doesn't match the printer's native format, LabelZoom
 converts it on the way — a carrier PDF sent to a Zebra becomes ZPL automatically. Every
 transform option from Convert works here too, even when no format change is needed.
+
+Every source format prints except `url`. Print takes the document as a binary file or as text,
+not as base64 text: turn base64 into a file with n8n's **Convert to File** node first.
+**Auto-Detect** recognizes PDFs and images only, so choose the source format for anything else.
+
+**Print Template** takes one record as a JSON object. An array of objects prints one label per
+entry as a single batch, and the output then lists the `jobs`, with `remaining` counting any
+entries at the end that weren't submitted. Run the step again with the same idempotency key to
+submit them.
+
+When the daily print job limit is reached, the node fails the item without retrying: the limit
+resets at midnight UTC, so a retry can only fail again.
 
 **`dispatched` and `queued` mean *accepted*, not *printed*.** A job only reaches `completed`
 once the print agent reports back. Turn on **Wait for Completion** when the workflow needs to
@@ -117,7 +151,8 @@ label (`^PQ` in ZPL, for example) prints faster than sending the whole job again
 
 **Idempotency.** Print carries an `Idempotency-Key`; repeating a key returns the original job
 instead of printing again. It defaults to `{{ $execution.id }}-{{ $itemIndex }}`, which makes a
-retried *step* safe. Set it from an order number to make a whole workflow re-run safe too — a
+retried *step* safe. Clear the field and the node generates a random key for each print, used for
+that print's retries. Set it from an order number to make a whole workflow re-run safe too — a
 duplicate shipping label is a real cost. A key identifies the whole request, Copies included:
 repeating it with a different document, merge data or Copies is rejected with a 422 instead of
 replaying the original job, so give a deliberate reprint a key of its own.
@@ -158,8 +193,9 @@ npm test
 n8n verification forbids runtime dependencies, so this node cannot call
 [`@labelzoom/sdk`](https://www.npmjs.com/package/@labelzoom/sdk) — it re-implements the
 LabelZoom wire contract by hand. To stop the two drifting apart, it runs the **same
-language-neutral conformance fixtures** the eight official SDKs run: 87 cases pinned from
-`labelzoom-sdk` covering request shape, error mapping, retry policy and local validation.
+language-neutral conformance fixtures** the eight official SDKs run, pinned to an SDK release
+tag in `labelzoom-sdk` and covering request shape, error mapping, retry policy, printing and
+local validation.
 
 ```sh
 npm run sync-conformance             # refresh test/conformance/ from the pinned SDK ref

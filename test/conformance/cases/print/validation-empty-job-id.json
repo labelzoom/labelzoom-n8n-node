@@ -1,0 +1,18 @@
+{
+  "id": "print/validation-empty-job-id",
+  "note": "P7: an empty job id would address a different endpoint.",
+  "given": {
+    "client": {
+      "apiKey": "lz_test_print_key"
+    },
+    "operation": "getJob",
+    "jobId": "",
+    "responses": []
+  },
+  "expect": {
+    "validationError": {
+      "parameter": "jobId"
+    },
+    "requestsSent": 0
+  }
+}

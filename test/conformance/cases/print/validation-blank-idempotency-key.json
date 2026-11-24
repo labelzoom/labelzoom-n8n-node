@@ -1,0 +1,21 @@
+{
+  "id": "print/validation-blank-idempotency-key",
+  "note": "P7: a blank key is a caller bug. Omit the key to let the SDK generate one.",
+  "given": {
+    "client": {
+      "apiKey": "lz_test_print_key"
+    },
+    "operation": "print",
+    "printerId": "5b0e3c1a-8f2d-4c6e-9a7b-1d2e3f4a5b6c",
+    "source": "zpl",
+    "bodyText": "^XA^FO50,50^A0N,50,50^FDHello^FS^XZ",
+    "idempotencyKey": "  ",
+    "responses": []
+  },
+  "expect": {
+    "validationError": {
+      "parameter": "idempotencyKey"
+    },
+    "requestsSent": 0
+  }
+}
