@@ -34,9 +34,9 @@ npm install n8n-nodes-labelzoom
 Create a **LabelZoom API** credential with the API key from the **API Access** section of your
 [dashboard](https://www.labelzoom.com/dashboard).
 
-**Converting works without a credential.** Leave it unset and the node runs on the free tier —
-unlimited conversions, watermarked output, first label only, 1 MB request cap. Add a key when
-you're ready to ship.
+**Converting works without a credential.** Leave it unset and the node runs on the free tier:
+unlimited conversions with watermarked output, and the first label of each request (set
+**Label Index** to convert any other one). Add a key when you're ready to ship.
 
 **Printing requires a key with the `print` scope**, because a print job goes to *your* printer.
 `print` implies `convert`, so one key covers both.
@@ -87,7 +87,7 @@ surfaced in the UI can go through **Custom Parameters (JSON)**.
 | **Target DPI** | The resolution of the output. Every target except PDF |
 | **Label Index** | Convert one label of a multi-label document, counting from 0 |
 | **Split Page Into Labels** | Cut each page of a PDF or image into a grid of labels, such as a sheet of address labels. Lengths are in inches |
-| **Layout** | Put several labels side by side on a multi-across roll (ZPL output) |
+| **Layout** | Put several labels side by side on a multi-across roll (printer-language output from a PDF or image) |
 | **Collapse Identical Labels** | Write each run of identical labels as one ZPL label with a `^PQ` count |
 
 Split, layout and collapsing need **PDF Conversion Mode** set to **Image**, the default.
